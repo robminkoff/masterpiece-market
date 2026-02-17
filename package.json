@@ -6,21 +6,33 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "acquire": "tsx scripts/acquire/run.ts",
+    "acquire:validate": "tsx scripts/acquire/run.ts validate",
+    "acquire:download": "tsx scripts/acquire/run.ts download"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.95.3",
+    "csv-parse": "^6.1.0",
+    "dotenv": "^17.3.1",
     "next": "16.1.6",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "sharp": "^0.34.5",
+    "socket.io-client": "^4.8.3",
+    "zod": "^4.3.6",
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/sharp": "^0.31.1",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

@@ -1,0 +1,17 @@
+{
+  "name": "masterpiece-market-socket-server",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "npx tsx watch src/index.ts",
+    "start": "npx tsx src/index.ts"
+  },
+  "dependencies": {
+    "socket.io": "^4.7.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
