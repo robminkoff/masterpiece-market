@@ -6,7 +6,9 @@ import Link from "next/link";
 import { io, Socket } from "socket.io-client";
 import { BidPanel } from "@/components/BidPanel";
 import { AuctionTimer } from "@/components/AuctionTimer";
+import { ArtFrame } from "@/components/ArtFrame";
 import { STUB_USER_ID } from "@/lib/supabase";
+import type { Artwork } from "@/lib/types";
 
 interface BidEvent {
   bidder_id: string;
@@ -23,8 +25,22 @@ export default function LiveAuctionPage() {
   const [currentBid, setCurrentBid] = useState(0);
   const [bidHistory, setBidHistory] = useState<BidEvent[]>([]);
   const [artworkTitle, setArtworkTitle] = useState("Loading...");
+  const [artwork, setArtwork] = useState<Artwork | null>(null);
   const [endsAt, setEndsAt] = useState(new Date(Date.now() + 3600_000).toISOString());
   const [status, setStatus] = useState("Connecting...");
+
+  // Fetch auction data (includes joined artwork) for the image
+  useEffect(() => {
+    fetch("/api/auctions")
+      .then((r) => r.json())
+      .then((data) => {
+        const auction = data.auctions?.find((a: { id: string }) => a.id === auctionId);
+        if (auction?.artwork) {
+          setArtwork(auction.artwork);
+          setArtworkTitle(auction.artwork.title);
+        }
+      });
+  }, [auctionId]);
 
   useEffect(() => {
     const s = io(SOCKET_URL, { transports: ["websocket", "polling"] });
@@ -103,12 +119,24 @@ export default function LiveAuctionPage() {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h1 className="text-2xl font-bold">{artworkTitle}</h1>
-                <p className="text-sm text-gray-400 mt-1">Auction #{auctionId}</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  {artwork ? `${artwork.artist}${artwork.year ? `, ${artwork.year}` : ""}` : `Auction #${auctionId}`}
+                </p>
               </div>
               <div className="text-right">
                 <div className="text-xs text-gray-500 mb-1">Time Remaining</div>
                 <AuctionTimer endsAt={endsAt} />
               </div>
+            </div>
+
+            {/* Artwork display */}
+            <div className="bg-neutral-100 dark:bg-neutral-900 rounded-lg flex justify-center p-6 mb-4">
+              <ArtFrame
+                src={artwork?.image_url ?? null}
+                alt={artworkTitle}
+                tier={artwork?.tier ?? "D"}
+                size="lg"
+              />
             </div>
 
             {/* Current bid display */}

@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Auction } from "@/lib/types";
+import { TIER_CONFIG } from "@/lib/types";
+import { ArtFrame } from "@/components/ArtFrame";
 
 const STATUS_BADGES: Record<string, string> = {
   live: "bg-green-100 text-green-800",
@@ -71,35 +73,60 @@ export default function AuctionHousePage() {
 
 function AuctionCard({ auction }: { auction: Auction }) {
   const badge = STATUS_BADGES[auction.status] ?? STATUS_BADGES.ended;
-  const title = auction.artwork?.title ?? "Unknown Artwork";
-  const artist = auction.artwork?.artist ?? "";
+  const art = auction.artwork;
+  const title = art?.title ?? "Unknown Artwork";
+  const artist = art?.artist ?? "";
+  const tier = art?.tier ?? "D";
+  const cfg = TIER_CONFIG[tier];
 
   return (
-    <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-4 flex justify-between items-start">
-      <div>
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded ${badge}`}>{auction.status}</span>
-        <h3 className="font-semibold mt-2">{title}</h3>
-        <p className="text-sm text-gray-500">{artist}</p>
-        <p className="text-sm mt-1">
-          {auction.status === "live"
-            ? `Current bid: ${auction.current_bid.toLocaleString()} cr`
-            : `Starting bid: ${auction.starting_bid.toLocaleString()} cr`}
-        </p>
-        <p className="text-xs text-gray-400 mt-1">
-          {auction.status === "scheduled"
-            ? `Starts: ${new Date(auction.starts_at).toLocaleString()}`
-            : `Ends: ${new Date(auction.ends_at).toLocaleString()}`}
-        </p>
+    <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
+      {/* Artwork image */}
+      <div className="bg-neutral-100 dark:bg-neutral-900 flex justify-center p-4">
+        <ArtFrame
+          src={art?.image_url ?? null}
+          alt={title}
+          tier={tier}
+          size="sm"
+        />
       </div>
 
-      {auction.status === "live" && (
-        <Link
-          href={`/auction-house/live/${auction.id}`}
-          className="bg-[var(--accent-dark)] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90"
-        >
-          Join
-        </Link>
-      )}
+      {/* Info */}
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded ${badge}`}>{auction.status}</span>
+          <span className="text-xs text-gray-400 font-medium">T{tier} {cfg.label}</span>
+        </div>
+        <h3 className="font-semibold">{title}</h3>
+        <p className="text-sm text-gray-500">{artist}{art?.year ? `, ${art.year}` : ""}</p>
+        <div className="mt-3 flex items-center justify-between">
+          <div>
+            <p className="text-xs text-gray-400">
+              {auction.status === "live" ? "Current bid" : "Starting bid"}
+            </p>
+            <p className="text-lg font-bold">
+              {(auction.status === "live" ? auction.current_bid : auction.starting_bid).toLocaleString()} cr
+            </p>
+          </div>
+          {auction.status === "live" ? (
+            <Link
+              href={`/auction-house/live/${auction.id}`}
+              className="bg-[var(--accent-dark)] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90"
+            >
+              Join
+            </Link>
+          ) : (
+            <p className="text-xs text-gray-400">
+              Starts {new Date(auction.starts_at).toLocaleDateString()}
+            </p>
+          )}
+        </div>
+        {auction.status === "live" && (
+          <p className="text-xs text-gray-400 mt-2">
+            {auction.bid_count} bid{auction.bid_count !== 1 ? "s" : ""} · Ends {new Date(auction.ends_at).toLocaleTimeString()}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
