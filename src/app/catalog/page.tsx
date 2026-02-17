@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { ArtworkCard } from "@/components/ArtworkCard";
-import type { Artwork, ArtworkTier } from "@/lib/types";
+import type { EnrichedArtwork, ArtworkTier } from "@/lib/types";
 
 const TIERS: (ArtworkTier | "all")[] = ["all", "A", "B", "C", "D"];
 
 export default function CatalogPage() {
-  const [artworks, setArtworks] = useState<Artwork[]>([]);
+  const [artworks, setArtworks] = useState<EnrichedArtwork[]>([]);
   const [filter, setFilter] = useState<ArtworkTier | "all">("all");
   const [loading, setLoading] = useState(true);
 
@@ -22,9 +22,9 @@ export default function CatalogPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
         <h1 className="text-3xl font-bold">Catalog</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {TIERS.map((t) => (
             <button
               key={t}

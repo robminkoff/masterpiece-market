@@ -1,7 +1,8 @@
 // Masterpiece Market — Seed Data
 // Used by API route stubs and can be adapted into a real DB seed script.
 
-import type { Artwork, Auction, Museum, MuseumExhibition, Npc } from "@/lib/types";
+import type { Artwork, Auction, Museum, MuseumExhibition, Npc, Ownership, ProvenanceEvent } from "@/lib/types";
+import { STUB_USER_ID } from "@/lib/supabase";
 
 /** Helper: fill acquisition fields with defaults for legacy seed data */
 function art(base: {
@@ -29,7 +30,7 @@ function art(base: {
 // ARTWORKS — 20 famous public-domain works
 // ============================================================
 export const SEED_ARTWORKS: Artwork[] = [
-  // --- Tier A: Iconic 1/1 ---
+  // --- Tier A: IV ≥ 350k ---
   art({
     id: "art-001",
     title: "Mona Lisa",
@@ -70,7 +71,7 @@ export const SEED_ARTWORKS: Artwork[] = [
     created_at: new Date().toISOString(),
   }),
 
-  // --- Tier B: Major Works ---
+  // --- Tier B: 75k–350k ---
   art({
     id: "art-004",
     title: "The Great Wave off Kanagawa",
@@ -137,14 +138,14 @@ export const SEED_ARTWORKS: Artwork[] = [
     created_at: new Date().toISOString(),
   }),
 
-  // --- Tier C: Mid-tier ---
+  // --- Tier B: 75k–350k ---
   art({
     id: "art-009",
     title: "Nighthawks",
     artist: "Edward Hopper",
     year: 1942,
     medium: "Oil on canvas",
-    tier: "C",
+    tier: "B",
     insured_value: 75_000,
     image_url: "/artworks/art-009.jpg",
     tags: ["american", "urban", "realism"],
@@ -157,13 +158,14 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Gustav Klimt",
     year: 1908,
     medium: "Oil and gold leaf on canvas",
-    tier: "C",
+    tier: "B",
     insured_value: 80_000,
     image_url: "/artworks/art-010.jpg",
     tags: ["art-nouveau", "romantic", "gold"],
     description: "Lovers entwined in gold. Klimt's most popular work.",
     created_at: new Date().toISOString(),
   }),
+  // --- Tier C: 10k–75k ---
   art({
     id: "art-011",
     title: "Water Lilies (Nymphéas)",
@@ -196,7 +198,7 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Eugène Delacroix",
     year: 1830,
     medium: "Oil on canvas",
-    tier: "C",
+    tier: "B",
     insured_value: 90_000,
     image_url: "/artworks/art-013.jpg",
     tags: ["romanticism", "political", "iconic"],
@@ -217,7 +219,7 @@ export const SEED_ARTWORKS: Artwork[] = [
     created_at: new Date().toISOString(),
   }),
 
-  // --- Tier D: Editions / Minor ---
+  // --- Tier D: IV < 10k ---
   art({
     id: "art-015",
     title: "Composition II in Red, Blue, and Yellow",
@@ -299,7 +301,7 @@ export const SEED_ARTWORKS: Artwork[] = [
 ];
 
 // ============================================================
-// NPCs — 12 Curators + 6 Dealers
+// NPCs — 12 Curators + 6 Dealers + 3 Critics
 // ============================================================
 export const SEED_NPCS: Npc[] = [
   // --- Curators ---
@@ -308,9 +310,19 @@ export const SEED_NPCS: Npc[] = [
     name: "Mina Kline",
     role: "curator",
     npc_tier: "assistant",
+    slug: "mina-kline",
     specialty: "Experimental new media",
     description: "Young, boundary-pushing assistant curator. Drawn to video art, installations, and digital hybrids.",
     traits: { taste: "new-media", risk: "high", prestige_bonus: 1 },
+    credits: 2_500,
+    prestige: 15,
+    stewardship_score: 55,
+    npc_data: {
+      exhibitions: [
+        { title: "Pixels & Paint", status: "open", visitors: 28 },
+      ],
+      loan_fees: { base_rate: 0.0025 },
+    },
     unlock_tier: "beginner",
     created_at: new Date().toISOString(),
   },
@@ -319,9 +331,17 @@ export const SEED_NPCS: Npc[] = [
     name: "Theo Marrow",
     role: "curator",
     npc_tier: "assistant",
+    slug: "theo-marrow",
     specialty: "Dark surreal / noir",
     description: "Brooding aesthete. Prefers unsettling, shadow-laden works with psychological depth.",
     traits: { taste: "surreal-noir", risk: "medium", prestige_bonus: 1 },
+    credits: 3_000,
+    prestige: 12,
+    stewardship_score: 60,
+    npc_data: {
+      exhibitions: [],
+      loan_fees: { base_rate: 0.0025 },
+    },
     unlock_tier: "beginner",
     created_at: new Date().toISOString(),
   },
@@ -330,9 +350,17 @@ export const SEED_NPCS: Npc[] = [
     name: "Jun Park",
     role: "curator",
     npc_tier: "assistant",
+    slug: "jun-park",
     specialty: "Minimal / graphic",
     description: "Clean-lined thinker. Curates with precision — geometric abstraction, typography, stark compositions.",
     traits: { taste: "minimal-graphic", risk: "low", prestige_bonus: 1 },
+    credits: 2_800,
+    prestige: 10,
+    stewardship_score: 65,
+    npc_data: {
+      exhibitions: [],
+      loan_fees: { base_rate: 0.0025 },
+    },
     unlock_tier: "beginner",
     created_at: new Date().toISOString(),
   },
@@ -341,9 +369,20 @@ export const SEED_NPCS: Npc[] = [
     name: "Dr. Celeste Armand",
     role: "curator",
     npc_tier: "curator",
+    slug: "dr-celeste-armand",
     specialty: "High-concept institutional",
     description: "Rigorous academic curator. Builds intellectually demanding exhibitions for major museums.",
     traits: { taste: "conceptual", risk: "medium", prestige_bonus: 3 },
+    credits: 8_000,
+    prestige: 45,
+    stewardship_score: 72,
+    npc_data: {
+      exhibitions: [
+        { title: "The Idea of Form", status: "closed", visitors: 120 },
+        { title: "After the Object", status: "open", visitors: 55 },
+      ],
+      loan_fees: { base_rate: 0.0045 },
+    },
     unlock_tier: "beginner",
     created_at: new Date().toISOString(),
   },
@@ -352,9 +391,19 @@ export const SEED_NPCS: Npc[] = [
     name: "Rafi Delgado",
     role: "curator",
     npc_tier: "curator",
+    slug: "rafi-delgado",
     specialty: "Pop / bold / shareable",
     description: "Social-media-savvy curator. Wants blockbusters that draw crowds and go viral.",
     traits: { taste: "pop-bold", risk: "medium", prestige_bonus: 2 },
+    credits: 6_500,
+    prestige: 30,
+    stewardship_score: 58,
+    npc_data: {
+      exhibitions: [
+        { title: "Color Bomb!", status: "open", visitors: 200 },
+      ],
+      loan_fees: { base_rate: 0.0045 },
+    },
     unlock_tier: "beginner",
     created_at: new Date().toISOString(),
   },
@@ -363,9 +412,17 @@ export const SEED_NPCS: Npc[] = [
     name: "Imogen Vale",
     role: "curator",
     npc_tier: "curator",
+    slug: "imogen-vale",
     specialty: "Romantic landscapes / atmosphere",
     description: "Dreamy, poetic curator. Favors atmospheric works — Turner sunsets, misty mountains, golden-hour scenes.",
     traits: { taste: "romantic-landscape", risk: "low", prestige_bonus: 2 },
+    credits: 5_200,
+    prestige: 25,
+    stewardship_score: 70,
+    npc_data: {
+      exhibitions: [],
+      loan_fees: { base_rate: 0.0045 },
+    },
     unlock_tier: "beginner",
     created_at: new Date().toISOString(),
   },
@@ -374,9 +431,19 @@ export const SEED_NPCS: Npc[] = [
     name: "Kenji Sato",
     role: "curator",
     npc_tier: "curator",
+    slug: "kenji-sato",
     specialty: "Design / typography / architecture",
     description: "Cross-disciplinary curator. Bridges fine art and design with architectural sensibility.",
     traits: { taste: "design-architecture", risk: "low", prestige_bonus: 2 },
+    credits: 7_000,
+    prestige: 35,
+    stewardship_score: 68,
+    npc_data: {
+      exhibitions: [
+        { title: "Grid Systems", status: "closed", visitors: 90 },
+      ],
+      loan_fees: { base_rate: 0.0045 },
+    },
     unlock_tier: "mid",
     created_at: new Date().toISOString(),
   },
@@ -385,9 +452,20 @@ export const SEED_NPCS: Npc[] = [
     name: "Vivienne Roche",
     role: "curator",
     npc_tier: "chief",
+    slug: "vivienne-roche",
     specialty: "Canonical blue-chip",
     description: "Grand dame of the establishment. Only deals in certified masterpieces and blue-chip names.",
     traits: { taste: "blue-chip", risk: "low", prestige_bonus: 5 },
+    credits: 25_000,
+    prestige: 120,
+    stewardship_score: 85,
+    npc_data: {
+      exhibitions: [
+        { title: "The Canon", status: "open", visitors: 310 },
+        { title: "Masters in Dialogue", status: "closed", visitors: 450 },
+      ],
+      loan_fees: { base_rate: 0.0075 },
+    },
     unlock_tier: "mid",
     created_at: new Date().toISOString(),
   },
@@ -396,9 +474,19 @@ export const SEED_NPCS: Npc[] = [
     name: "Professor Omar Nwosu",
     role: "curator",
     npc_tier: "chief",
+    slug: "professor-omar-nwosu",
     specialty: "Politics / power / history",
     description: "Politically engaged chief curator. Builds exhibitions that challenge power structures.",
     traits: { taste: "political-historical", risk: "high", prestige_bonus: 5 },
+    credits: 18_000,
+    prestige: 95,
+    stewardship_score: 78,
+    npc_data: {
+      exhibitions: [
+        { title: "Revolution on Canvas", status: "closed", visitors: 280 },
+      ],
+      loan_fees: { base_rate: 0.0075 },
+    },
     unlock_tier: "mid",
     created_at: new Date().toISOString(),
   },
@@ -407,9 +495,19 @@ export const SEED_NPCS: Npc[] = [
     name: "Sister Alethea",
     role: "curator",
     npc_tier: "chief",
+    slug: "sister-alethea",
     specialty: "Contemplative / spiritual minimal",
     description: "Monastic chief curator. Seeks transcendence through simplicity, silence, and light.",
     traits: { taste: "contemplative-spiritual", risk: "low", prestige_bonus: 4 },
+    credits: 12_000,
+    prestige: 80,
+    stewardship_score: 92,
+    npc_data: {
+      exhibitions: [
+        { title: "Silence & Light", status: "open", visitors: 65 },
+      ],
+      loan_fees: { base_rate: 0.0075 },
+    },
     unlock_tier: "mid",
     created_at: new Date().toISOString(),
   },
@@ -418,9 +516,20 @@ export const SEED_NPCS: Npc[] = [
     name: "The Archivist",
     role: "curator",
     npc_tier: "legendary",
+    slug: "the-archivist",
     specialty: "Provenance-obsessed, anonymous",
     description: "Identity unknown. Obsessed with documentation, authenticity, and chain of custody. Will only exhibit works with impeccable provenance.",
     traits: { taste: "provenance", risk: "low", prestige_bonus: 10 },
+    credits: 50_000,
+    prestige: 250,
+    stewardship_score: 98,
+    npc_data: {
+      exhibitions: [
+        { title: "Chain of Custody", status: "open", visitors: 180 },
+        { title: "Authenticated", status: "closed", visitors: 520 },
+      ],
+      loan_fees: { base_rate: 0.012 },
+    },
     unlock_tier: "whale",
     created_at: new Date().toISOString(),
   },
@@ -429,9 +538,19 @@ export const SEED_NPCS: Npc[] = [
     name: "Marquis Sable",
     role: "curator",
     npc_tier: "legendary",
+    slug: "marquis-sable",
     specialty: "Contrarian kingmaker",
     description: "Eccentric aristocrat-collector turned legendary curator. Champions overlooked works and declares new icons on a whim.",
     traits: { taste: "contrarian", risk: "high", prestige_bonus: 10 },
+    credits: 75_000,
+    prestige: 300,
+    stewardship_score: 70,
+    npc_data: {
+      exhibitions: [
+        { title: "The Overlooked", status: "open", visitors: 400 },
+      ],
+      loan_fees: { base_rate: 0.012 },
+    },
     unlock_tier: "whale",
     created_at: new Date().toISOString(),
   },
@@ -442,9 +561,17 @@ export const SEED_NPCS: Npc[] = [
     name: "Galleria North",
     role: "dealer",
     npc_tier: "primary",
+    slug: "galleria-north",
     specialty: "New listings, fair prices",
     description: "Reputable primary gallery. Offers fair market prices for consignments. Good for beginners.",
     traits: { commission: 0.10, reliability: "high" },
+    credits: 15_000,
+    prestige: 40,
+    stewardship_score: 80,
+    npc_data: {
+      services: ["Consignment", "Appraisal", "New artist listings"],
+      consignment_terms: { commission_rate: 0.10, min_iv: 1_000 },
+    },
     unlock_tier: "beginner",
     created_at: new Date().toISOString(),
   },
@@ -453,9 +580,17 @@ export const SEED_NPCS: Npc[] = [
     name: "Bram & Co.",
     role: "dealer",
     npc_tier: "secondary",
+    slug: "bram-and-co",
     specialty: "Resale market, variable pricing",
     description: "Established secondary market dealer. Prices fluctuate. Can find buyers for almost anything.",
     traits: { commission: 0.08, reliability: "medium" },
+    credits: 20_000,
+    prestige: 55,
+    stewardship_score: 62,
+    npc_data: {
+      services: ["Resale brokerage", "Market analysis", "Bulk deals"],
+      consignment_terms: { commission_rate: 0.08, min_iv: 500 },
+    },
     unlock_tier: "beginner",
     created_at: new Date().toISOString(),
   },
@@ -464,9 +599,17 @@ export const SEED_NPCS: Npc[] = [
     name: "The Private Room",
     role: "dealer",
     npc_tier: "broker",
+    slug: "the-private-room",
     specialty: "Private sales, discreet",
     description: "Exclusive broker for private transactions. High-value, no-publicity deals.",
     traits: { commission: 0.06, reliability: "high" },
+    credits: 100_000,
+    prestige: 150,
+    stewardship_score: 90,
+    npc_data: {
+      services: ["Private sales", "Discreet brokerage", "VIP introductions"],
+      consignment_terms: { commission_rate: 0.06, min_iv: 50_000 },
+    },
     unlock_tier: "whale",
     created_at: new Date().toISOString(),
   },
@@ -475,9 +618,17 @@ export const SEED_NPCS: Npc[] = [
     name: "Restoration House",
     role: "dealer",
     npc_tier: "specialist",
+    slug: "restoration-house",
     specialty: "Provenance research, condition reports",
     description: "Specialists in provenance verification and condition assessment. Can increase IV with clean reports.",
     traits: { commission: 0.12, reliability: "high" },
+    credits: 30_000,
+    prestige: 70,
+    stewardship_score: 88,
+    npc_data: {
+      services: ["Condition reports", "Provenance verification", "IV enhancement"],
+      consignment_terms: { commission_rate: 0.12, min_iv: 2_000 },
+    },
     unlock_tier: "mid",
     created_at: new Date().toISOString(),
   },
@@ -486,9 +637,17 @@ export const SEED_NPCS: Npc[] = [
     name: "Hearthstone Advisory",
     role: "dealer",
     npc_tier: "specialist",
+    slug: "hearthstone-advisory",
     specialty: "Collection strategy",
     description: "Advisory firm for serious collectors. Provides strategic guidance on acquisitions and deaccessions.",
     traits: { commission: 0.05, reliability: "high" },
+    credits: 45_000,
+    prestige: 90,
+    stewardship_score: 82,
+    npc_data: {
+      services: ["Collection strategy", "Acquisition planning", "Deaccession advice"],
+      consignment_terms: { commission_rate: 0.05, min_iv: 10_000 },
+    },
     unlock_tier: "mid",
     created_at: new Date().toISOString(),
   },
@@ -497,10 +656,83 @@ export const SEED_NPCS: Npc[] = [
     name: "Night Market",
     role: "dealer",
     npc_tier: "secondary",
+    slug: "night-market",
     specialty: "Grey market, risky but profitable",
     description: "Operates in the shadows. Can move works quickly at premium prices, but reputation risk. Access is throttled.",
     traits: { commission: 0.15, reliability: "low" },
+    credits: 60_000,
+    prestige: 20,
+    stewardship_score: 30,
+    npc_data: {
+      services: ["Quick liquidation", "No-questions sales", "Cash advances"],
+      consignment_terms: { commission_rate: 0.15, min_iv: 0 },
+    },
     unlock_tier: "whale",
+    created_at: new Date().toISOString(),
+  },
+
+  // --- Critics ---
+  {
+    id: "npc-cr01",
+    name: "Elara Fontaine",
+    role: "critic",
+    npc_tier: "senior",
+    slug: "elara-fontaine",
+    specialty: "Contemporary review / market commentary",
+    description: "Sharp-tongued senior critic. Known for provocative reviews that can make or break market sentiment.",
+    traits: { influence: "high", bias: "contemporary" },
+    credits: 5_000,
+    prestige: 85,
+    stewardship_score: 50,
+    npc_data: {
+      posts: [
+        { title: "The Mona Lisa Problem", date: "2026-01-15", body: "Why does the market still overvalue canonical works while ignoring contemporary masterpieces? A provocation." },
+        { title: "Hokusai's Wave: Surf or Substance?", date: "2026-02-01", body: "Revisiting the Great Wave in the age of digital reproduction. Has ubiquity destroyed its aura?" },
+      ],
+    },
+    unlock_tier: "beginner",
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "npc-cr02",
+    name: "Henrik Voss",
+    role: "critic",
+    npc_tier: "chief",
+    slug: "henrik-voss",
+    specialty: "Historical analysis / blue-chip critique",
+    description: "Veteran chief critic. His decade-long column 'The Long View' is required reading for serious collectors.",
+    traits: { influence: "very-high", bias: "historical" },
+    credits: 8_000,
+    prestige: 160,
+    stewardship_score: 50,
+    npc_data: {
+      posts: [
+        { title: "The Long View: Vermeer's Enduring Market", date: "2026-01-20", body: "Girl with a Pearl Earring continues to command attention. We examine why Vermeer remains immune to fashion cycles." },
+        { title: "Klimt at a Crossroads", date: "2026-02-05", body: "The Kiss has become a poster. Can the original still justify its valuation in a world saturated with reproductions?" },
+        { title: "On Delacroix and Revolution", date: "2026-02-10", body: "Liberty Leading the People is political art at its most unapologetic. A defense of conviction in an ironic age." },
+      ],
+    },
+    unlock_tier: "mid",
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "npc-cr03",
+    name: "Zara Okafor",
+    role: "critic",
+    npc_tier: "junior",
+    slug: "zara-okafor",
+    specialty: "Emerging voices / digital art",
+    description: "Rising junior critic and cultural commentator. Bridges social media discourse with serious art criticism.",
+    traits: { influence: "medium", bias: "emerging" },
+    credits: 1_500,
+    prestige: 20,
+    stewardship_score: 50,
+    npc_data: {
+      posts: [
+        { title: "Print Culture in a Post-Digital World", date: "2026-02-12", body: "From Dürer's Melencolia I to NFT editions — how multiples continue to challenge our notion of originals." },
+      ],
+    },
+    unlock_tier: "beginner",
     created_at: new Date().toISOString(),
   },
 ];
@@ -546,6 +778,54 @@ export const SEED_MUSEUM_EXHIBITIONS: MuseumExhibition[] = [
     prestige_earned: 8,
     created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
   },
+];
+
+// ============================================================
+// OWNERSHIPS
+// ============================================================
+export const SEED_OWNERSHIPS: Ownership[] = [
+  // Stub user owns 4 artworks
+  { id: "own-001", artwork_id: "art-001", owner_id: STUB_USER_ID, acquired_at: new Date(Date.now() - 60 * 86400000).toISOString(), acquired_via: "auction", is_active: true, idle_weeks: 2, on_loan: false },
+  { id: "own-002", artwork_id: "art-004", owner_id: STUB_USER_ID, acquired_at: new Date(Date.now() - 45 * 86400000).toISOString(), acquired_via: "auction", is_active: true, idle_weeks: 0, on_loan: true },
+  { id: "own-003", artwork_id: "art-010", owner_id: STUB_USER_ID, acquired_at: new Date(Date.now() - 30 * 86400000).toISOString(), acquired_via: "purchase", is_active: true, idle_weeks: 4, on_loan: false },
+  { id: "own-004", artwork_id: "art-015", owner_id: STUB_USER_ID, acquired_at: new Date(Date.now() - 20 * 86400000).toISOString(), acquired_via: "purchase", is_active: true, idle_weeks: 1, on_loan: false },
+  // Dealers hold artworks (consignment / inventory) — available for sale or auction
+  // Galleria North (primary dealer, fair prices)
+  { id: "own-005", artwork_id: "art-006", owner_id: "npc-d01", acquired_at: new Date(Date.now() - 55 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 2, on_loan: false },
+  { id: "own-007", artwork_id: "art-007", owner_id: "npc-d01", acquired_at: new Date(Date.now() - 50 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 3, on_loan: false },
+  { id: "own-011", artwork_id: "art-011", owner_id: "npc-d01", acquired_at: new Date(Date.now() - 35 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 1, on_loan: false },
+  { id: "own-016", artwork_id: "art-016", owner_id: "npc-d01", acquired_at: new Date(Date.now() - 25 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
+  { id: "own-019", artwork_id: "art-019", owner_id: "npc-d01", acquired_at: new Date(Date.now() - 18 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
+  // Bram & Co. (secondary market, resale)
+  { id: "own-006", artwork_id: "art-005", owner_id: "npc-d02", acquired_at: new Date(Date.now() - 42 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 1, on_loan: false },
+  { id: "own-008", artwork_id: "art-008", owner_id: "npc-d02", acquired_at: new Date(Date.now() - 38 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 2, on_loan: false },
+  { id: "own-014", artwork_id: "art-014", owner_id: "npc-d02", acquired_at: new Date(Date.now() - 22 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
+  { id: "own-020", artwork_id: "art-020", owner_id: "npc-d02", acquired_at: new Date(Date.now() - 14 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
+  // The Private Room (broker, high-value private sales)
+  { id: "own-010", artwork_id: "art-002", owner_id: "npc-d03", acquired_at: new Date(Date.now() - 80 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
+  { id: "own-012", artwork_id: "art-003", owner_id: "npc-d03", acquired_at: new Date(Date.now() - 75 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
+  // Restoration House (specialist, provenance research)
+  { id: "own-009", artwork_id: "art-017", owner_id: "npc-d04", acquired_at: new Date(Date.now() - 40 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 5, on_loan: false },
+  { id: "own-013", artwork_id: "art-012", owner_id: "npc-d04", acquired_at: new Date(Date.now() - 28 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 1, on_loan: false },
+  // Hearthstone Advisory (collection strategy)
+  { id: "own-015", artwork_id: "art-013", owner_id: "npc-d05", acquired_at: new Date(Date.now() - 32 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
+  // Night Market (grey market, risky)
+  { id: "own-017", artwork_id: "art-009", owner_id: "npc-d06", acquired_at: new Date(Date.now() - 12 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
+  { id: "own-018", artwork_id: "art-018", owner_id: "npc-d06", acquired_at: new Date(Date.now() - 8 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
+];
+
+// ============================================================
+// PROVENANCE EVENTS
+// ============================================================
+export const SEED_PROVENANCE_EVENTS: ProvenanceEvent[] = [
+  { id: "prov-001", artwork_id: "art-001", event_type: "purchase", from_owner: null, to_owner: STUB_USER_ID, price: 950_000, metadata: { source: "evening auction" }, created_at: new Date(Date.now() - 60 * 86400000).toISOString() },
+  { id: "prov-002", artwork_id: "art-004", event_type: "purchase", from_owner: null, to_owner: STUB_USER_ID, price: 185_000, metadata: { source: "regular auction" }, created_at: new Date(Date.now() - 45 * 86400000).toISOString() },
+  { id: "prov-003", artwork_id: "art-004", event_type: "loan", from_owner: STUB_USER_ID, to_owner: "npc-c01", price: null, metadata: { curator: "Mina Kline", exhibition: "Pixels & Paint" }, created_at: new Date(Date.now() - 10 * 86400000).toISOString() },
+  { id: "prov-004", artwork_id: "art-010", event_type: "purchase", from_owner: "npc-d02", to_owner: STUB_USER_ID, price: 78_000, metadata: { dealer: "Bram & Co." }, created_at: new Date(Date.now() - 30 * 86400000).toISOString() },
+  { id: "prov-005", artwork_id: "art-015", event_type: "purchase", from_owner: "npc-d01", to_owner: STUB_USER_ID, price: 7_500, metadata: { dealer: "Galleria North" }, created_at: new Date(Date.now() - 20 * 86400000).toISOString() },
+  { id: "prov-006", artwork_id: "art-002", event_type: "exhibition", from_owner: "npc-c08", to_owner: null, price: null, metadata: { exhibition: "Masters in Dialogue", museum: "Vivienne Roche Gallery" }, created_at: new Date(Date.now() - 30 * 86400000).toISOString() },
+  { id: "prov-007", artwork_id: "art-012", event_type: "loan", from_owner: "npc-c05", to_owner: "npc-c05", price: null, metadata: { exhibition: "Color Bomb!", curator: "Rafi Delgado" }, created_at: new Date(Date.now() - 15 * 86400000).toISOString() },
+  { id: "prov-008", artwork_id: "art-005", event_type: "exhibition", from_owner: "npc-c12", to_owner: null, price: null, metadata: { exhibition: "The Overlooked", curator: "Marquis Sable" }, created_at: new Date(Date.now() - 5 * 86400000).toISOString() },
 ];
 
 // ============================================================

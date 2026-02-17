@@ -29,7 +29,7 @@ export default function DashboardPage() {
         <StatCard label="Credits Available" value={`${user.credits.toLocaleString()} cr`} />
         <StatCard label="Next Weekly Bill" value={`${totalWeekly.toLocaleString()} cr`} accent />
         <StatCard label="Weeks of Runway" value={`${weeksUntilBroke} weeks`} />
-        <StatCard label="Tier" value={user.tier.charAt(0).toUpperCase() + user.tier.slice(1)} />
+        <StatCard label="Artworks Owned" value={`${MOCK_OWNED.length}`} />
       </div>
 
       {/* Collection */}
@@ -40,7 +40,7 @@ export default function DashboardPage() {
             <thead className="bg-gray-50 dark:bg-gray-900">
               <tr>
                 <th className="text-left p-3 font-medium">Artwork</th>
-                <th className="text-left p-3 font-medium">Tier</th>
+                <th className="text-left p-3 font-medium">Class</th>
                 <th className="text-right p-3 font-medium">IV</th>
                 <th className="text-right p-3 font-medium">Weekly Cost</th>
                 <th className="text-center p-3 font-medium">Status</th>
@@ -53,7 +53,7 @@ export default function DashboardPage() {
                   <tr key={a.title} className="border-t border-gray-100 dark:border-gray-800">
                     <td className="p-3 font-medium">{a.title}</td>
                     <td className="p-3">
-                      {a.tier} — {TIER_CONFIG[a.tier].label}
+                      {TIER_CONFIG[a.tier].label}
                     </td>
                     <td className="p-3 text-right">{a.iv.toLocaleString()} cr</td>
                     <td className="p-3 text-right">{cost.toLocaleString()} cr</td>
@@ -117,10 +117,10 @@ export default function DashboardPage() {
                 Found a museum by meeting these requirements:
               </p>
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <ProgressRow label="Whale Tier" current={user.tier === "whale" ? "Yes" : "No"} target="Required" met={user.tier === "whale"} />
-                <ProgressRow label="Tier A Works" current={`${ownedByTier.A}`} target={`${reqs.minTierA}`} met={ownedByTier.A >= reqs.minTierA} />
-                <ProgressRow label="Tier B Works" current={`${ownedByTier.B}`} target={`${reqs.minTierB}`} met={ownedByTier.B >= reqs.minTierB} />
-                <ProgressRow label="Tier C Works" current={`${ownedByTier.C}`} target={`${reqs.minTierC}`} met={ownedByTier.C >= reqs.minTierC} />
+                <ProgressRow label="Whale Status" current={user.tier === "whale" ? "Yes" : "No"} target="Required" met={user.tier === "whale"} />
+                <ProgressRow label="Iconic Works" current={`${ownedByTier.A}`} target={`${reqs.minTierA}`} met={ownedByTier.A >= reqs.minTierA} />
+                <ProgressRow label="Major Works" current={`${ownedByTier.B}`} target={`${reqs.minTierB}`} met={ownedByTier.B >= reqs.minTierB} />
+                <ProgressRow label="Mid Works" current={`${ownedByTier.C}`} target={`${reqs.minTierC}`} met={ownedByTier.C >= reqs.minTierC} />
                 <ProgressRow label="Tag Diversity" current="0" target={`${reqs.minTagDiversity}`} met={false} />
                 <ProgressRow label="Prestige" current={`${user.prestige}`} target={`${reqs.minPrestige}`} met={user.prestige >= reqs.minPrestige} />
                 <ProgressRow label="Stewardship" current={`${user.stewardship}`} target={`${reqs.minStewardship}`} met={user.stewardship >= reqs.minStewardship} />

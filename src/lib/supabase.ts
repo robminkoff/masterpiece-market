@@ -13,6 +13,7 @@
 export const STUB_USER_ID = "00000000-0000-0000-0000-000000000001";
 export const STUB_USER: {
   id: string;
+  username: string;
   display_name: string;
   tier: import("./types").PlayerTier;
   credits: number;
@@ -20,6 +21,7 @@ export const STUB_USER: {
   stewardship: number;
 } = {
   id: STUB_USER_ID,
+  username: "dev-player",
   display_name: "Dev Player",
   tier: "beginner",
   credits: 10_000,

@@ -4,15 +4,33 @@ export type ArtworkTier = "A" | "B" | "C" | "D";
 export type PlayerTier = "beginner" | "mid" | "whale";
 export type AuctionType = "regular" | "evening" | "private" | "forced" | "estate";
 export type AuctionStatus = "scheduled" | "live" | "ended" | "settled" | "cancelled";
-export type NpcRole = "curator" | "dealer";
+export type NpcRole = "curator" | "dealer" | "critic";
 export type CuratorTier = "assistant" | "curator" | "chief" | "legendary";
 export type DealerTier = "primary" | "secondary" | "broker" | "specialist";
+export type CriticTier = "junior" | "senior" | "chief" | "legendary";
 export type LoanStatus = "pending" | "accepted" | "declined" | "expired";
 
 // ---------- Tier config ----------
+// Tier = stewardship burden bucket derived from Insured Value.
+// Higher IV → higher tier → higher weekly carry and stricter rules.
+
+export const IV_TIER_THRESHOLDS: { min: number; tier: ArtworkTier }[] = [
+  { min: 350_000, tier: "A" },
+  { min: 75_000, tier: "B" },
+  { min: 10_000, tier: "C" },
+  { min: 0, tier: "D" },
+];
+
+/** Derive artwork tier from its Insured Value. */
+export function tierFromIV(iv: number): ArtworkTier {
+  for (const { min, tier } of IV_TIER_THRESHOLDS) {
+    if (iv >= min) return tier;
+  }
+  return "D";
+}
 
 export const TIER_CONFIG = {
-  A: { premiumRate: 0.006, storageFee: 200, label: "Iconic (1/1)" },
+  A: { premiumRate: 0.006, storageFee: 200, label: "Iconic" },
   B: { premiumRate: 0.0035, storageFee: 80, label: "Major" },
   C: { premiumRate: 0.002, storageFee: 25, label: "Mid" },
   D: { premiumRate: 0.0008, storageFee: 5, label: "Edition" },
@@ -40,6 +58,7 @@ export const BID_EXTENSION_SECONDS = 15;
 
 export interface Profile {
   id: string;
+  username: string;
   display_name: string;
   tier: PlayerTier;
   credits: number;
@@ -130,11 +149,38 @@ export interface Npc {
   name: string;
   role: NpcRole;
   npc_tier: string;
+  slug: string;
   specialty: string | null;
   description: string | null;
   traits: Record<string, unknown>;
+  credits: number;
+  prestige: number;
+  stewardship_score: number;
+  npc_data: Record<string, unknown>;
   unlock_tier: PlayerTier;
   created_at: string;
+}
+
+// ---------- Profile entity (discriminated union) ----------
+
+export type ProfileEntity =
+  | { kind: "user"; profile: Profile; ownerships: Ownership[]; provenance: ProvenanceEvent[] }
+  | { kind: "npc"; npc: Npc; ownerships: Ownership[]; provenance: ProvenanceEvent[] };
+
+/** Compute stewardship score from behavioral events, clamped 0–100. */
+export function computeStewardship(events: {
+  delinquent: number;
+  onTime: number;
+  loansMade: number;
+  exhibitionCount: number;
+}): number {
+  const raw =
+    50 -
+    events.delinquent * 5 +
+    events.onTime * 2 +
+    events.loansMade * 1 +
+    events.exhibitionCount * 3;
+  return Math.max(0, Math.min(100, raw));
 }
 
 // ---------- Museum types ----------
@@ -203,6 +249,30 @@ export interface MuseumMembership {
   started_at: string;
   ends_at: string;
   auto_renew: boolean;
+}
+
+// ---------- Enriched types for API responses ----------
+
+export interface ArtworkOwnerInfo {
+  owner_id: string;
+  owner_type: "user" | "npc";
+  display_name: string;
+  slug: string;
+  role?: NpcRole;
+  npc_tier?: string;
+  acquired_at: string;
+}
+
+export interface ArtworkLoanInfo {
+  borrower_id: string;
+  borrower_name: string;
+  borrower_slug: string;
+  exhibition_title?: string;
+}
+
+export interface EnrichedArtwork extends Artwork {
+  owner?: ArtworkOwnerInfo;
+  loan?: ArtworkLoanInfo;
 }
 
 // ---------- Helpers ----------
