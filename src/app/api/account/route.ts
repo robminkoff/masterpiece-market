@@ -1,15 +1,28 @@
 import { NextResponse } from "next/server";
 import { getPlayerProfile, setPlayerProfile } from "@/data/store";
+import { createSupabaseServer } from "@/lib/supabase-server";
 
 export const dynamic = "force-dynamic";
 
 // GET /api/account — return current player profile (or null)
 export async function GET() {
+  const supabase = await createSupabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   return NextResponse.json({ profile: getPlayerProfile() });
 }
 
 // POST /api/account — create or update player profile
 export async function POST(req: Request) {
+  const supabase = await createSupabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = await req.json();
   const { username, display_name } = body as {
     username?: string;

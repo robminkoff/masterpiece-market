@@ -15,8 +15,23 @@ export default function Home() {
 
       <div className="flex gap-4 flex-wrap justify-center">
         <Link
-          href="/auction-house"
+          href="/signup"
           className="bg-[var(--accent-dark)] text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
+        >
+          Create Account
+        </Link>
+        <Link
+          href="/signin"
+          className="border border-gray-300 dark:border-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        >
+          Sign In
+        </Link>
+      </div>
+
+      <div className="flex gap-4 flex-wrap justify-center">
+        <Link
+          href="/auction-house"
+          className="bg-[var(--accent-dark)]/80 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
         >
           Enter Auction House
         </Link>

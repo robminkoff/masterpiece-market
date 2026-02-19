@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createSupabaseBrowser } from "@/lib/supabase";
 
 const USERNAME_RE = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/;
 
@@ -13,7 +14,9 @@ interface Profile {
 
 export default function AccountPage() {
   const router = useRouter();
+  const [supabase] = useState(() => createSupabaseBrowser());
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +67,13 @@ export default function AccountPage() {
     setProfile(data.profile);
     setSuccess(true);
     setSaving(false);
+  }
+
+  async function handleSignOut() {
+    setSigningOut(true);
+    await supabase.auth.signOut();
+    router.push("/");
+    router.refresh();
   }
 
   async function handleReset() {
@@ -136,6 +146,18 @@ export default function AccountPage() {
           </p>
         )}
       </form>
+
+      {/* Sign out */}
+      <div className="border border-gray-200 dark:border-gray-800 rounded-xl p-6 bg-white dark:bg-[#18182a] shadow-sm mb-8">
+        <h2 className="text-sm font-semibold mb-2">Session</h2>
+        <button
+          onClick={handleSignOut}
+          disabled={signingOut}
+          className="px-4 py-2 rounded-lg text-sm font-semibold border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+        >
+          {signingOut ? "Signing out..." : "Sign Out"}
+        </button>
+      </div>
 
       {/* Danger zone */}
       <div className="border border-red-200 dark:border-red-900 rounded-xl p-6 bg-red-50/50 dark:bg-red-950/20">

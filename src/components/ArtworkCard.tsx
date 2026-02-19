@@ -21,15 +21,17 @@ function isEnriched(artwork: Artwork): artwork is EnrichedArtwork {
   return "owner" in artwork;
 }
 
-export function ArtworkCard({ artwork }: { artwork: Artwork }) {
+export function ArtworkCard({ artwork, linkTo }: { artwork: Artwork; linkTo?: "artwork" }) {
   const owner = isEnriched(artwork) ? artwork.owner : undefined;
   const loan = isEnriched(artwork) ? artwork.loan : undefined;
 
-  const primaryHref = owner
-    ? owner.owner_type === "user"
-      ? `/u/${owner.slug}`
-      : `/institutions/${owner.slug}`
-    : `/artworks/${artwork.id}`;
+  const primaryHref = linkTo === "artwork"
+    ? `/artworks/${artwork.id}`
+    : owner
+      ? owner.owner_type === "user"
+        ? `/u/${owner.slug}`
+        : `/institutions/${owner.slug}`
+      : `/artworks/${artwork.id}`;
 
   return (
     <div className="group">

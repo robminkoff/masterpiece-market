@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { createSupabaseBrowser } from "@/lib/supabase";
+import type { User } from "@supabase/supabase-js";
 
 interface Profile {
   username: string;
@@ -11,27 +13,46 @@ interface Profile {
 }
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
   const router = useRouter();
-  const [profile, setProfile] = useState<Profile | null | undefined>(undefined); // undefined = loading
+  const [supabase] = useState(() => createSupabaseBrowser());
+  const [user, setUser] = useState<User | null | undefined>(undefined); // undefined = loading
+  const [profile, setProfile] = useState<Profile | null>(null);
 
+  // Check auth state on mount + listen for changes
   useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user: u } }) => {
+      setUser(u ?? null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase]);
+
+  // Fetch profile only when authenticated
+  useEffect(() => {
+    if (!user) {
+      setProfile(null);
+      return;
+    }
     fetch("/api/account")
       .then((r) => r.json())
       .then((data) => setProfile(data.profile ?? null))
       .catch(() => setProfile(null));
-  }, []);
+  }, [user]);
 
-  // Redirect to setup if no profile and not already on /setup
-  const needsSetup = profile === null && pathname !== "/setup";
-  useEffect(() => {
-    if (needsSetup) {
-      router.replace("/setup");
-    }
-  }, [needsSetup, router]);
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    router.push("/");
+    router.refresh();
+  }
 
-  // While loading or redirecting, show skeleton nav
-  if (profile === undefined || needsSetup) {
+  // Loading state — skeleton nav
+  if (user === undefined) {
     return (
       <>
         <nav className="border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-[#0f0f1a]/80 backdrop-blur sticky top-0 z-50">
@@ -42,12 +63,32 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // On /setup, don't show nav
-  if (pathname === "/setup") {
-    return <main className="max-w-6xl mx-auto px-4 py-8">{children}</main>;
+  // Unauthenticated — minimal nav with auth links
+  if (user === null) {
+    return (
+      <>
+        <nav className="border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-[#0f0f1a]/80 backdrop-blur sticky top-0 z-50">
+          <div className="max-w-6xl mx-auto px-4 py-2 sm:py-0 sm:flex sm:items-center sm:justify-between sm:h-14">
+            <Link href="/" className="font-bold text-lg tracking-tight block text-center sm:text-left">
+              <span className="text-[var(--accent-dark)]">Masterpiece</span> Market
+            </Link>
+            <div className="flex justify-center gap-4 sm:gap-6 text-sm mt-1.5 sm:mt-0">
+              <Link href="/signin" className="hover:text-[var(--accent-dark)] transition-colors">
+                Sign In
+              </Link>
+              <Link href="/signup" className="hover:text-[var(--accent-dark)] transition-colors">
+                Sign Up
+              </Link>
+            </div>
+          </div>
+        </nav>
+        <main className="max-w-6xl mx-auto px-4 py-8">{children}</main>
+      </>
+    );
   }
 
-  const profileLink = profile ? `/u/${profile.username}` : "/setup";
+  // Authenticated — full nav
+  const profileLink = profile ? `/u/${profile.username}` : "/account";
 
   return (
     <>
@@ -81,6 +122,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <Link href="/account" className="hover:text-[var(--accent-dark)] transition-colors whitespace-nowrap">
               Account
             </Link>
+            <button
+              onClick={handleSignOut}
+              className="hover:text-[var(--accent-dark)] transition-colors whitespace-nowrap text-sm"
+            >
+              Sign Out
+            </button>
           </div>
         </div>
       </nav>

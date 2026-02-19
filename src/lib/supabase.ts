@@ -1,14 +1,23 @@
-// Supabase client — stubbed for v0
-// TODO: Replace with real Supabase client when project is set up
-//
-// import { createClient } from "@supabase/supabase-js";
-// export const supabase = createClient(
-//   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-//   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-// );
+import { createBrowserClient } from "@supabase/ssr";
 
-// For v0, we use in-memory data from seed. This file exists so that the
-// import path is stable and can be swapped to a real client later.
+// ---------------------------------------------------------------------------
+// Supabase browser client (safe for client components)
+// ---------------------------------------------------------------------------
+
+// Fallback placeholders allow `next build` to succeed without real env vars.
+// The app will not connect to Supabase until valid values are provided at runtime.
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
+const SUPABASE_ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-anon-key";
+
+export function createSupabaseBrowser() {
+  return createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
+// ---------------------------------------------------------------------------
+// In-memory stub user (used by 13+ game-logic files — keep unchanged)
+// ---------------------------------------------------------------------------
 
 export const STUB_USER_ID = "00000000-0000-0000-0000-000000000001";
 export const STUB_USER: {
