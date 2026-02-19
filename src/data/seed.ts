@@ -1,8 +1,10 @@
 // Masterpiece Market — Seed Data
 // Used by API route stubs and can be adapted into a real DB seed script.
 
-import type { Artwork, Auction, Museum, MuseumExhibition, Npc, Ownership, ProvenanceEvent } from "@/lib/types";
+import type { Artwork, Auction, GalleryNoteSection, Museum, MuseumExhibition, Npc, Ownership, ProvenanceEvent } from "@/lib/types";
 import { STUB_USER_ID } from "@/lib/supabase";
+
+export const DEMO_COLLECTOR_ID = "00000000-0000-0000-0000-000000000099";
 
 /** Helper: fill acquisition fields with defaults for legacy seed data */
 function art(base: {
@@ -10,9 +12,11 @@ function art(base: {
   medium: string | null; tier: import("@/lib/types").ArtworkTier;
   insured_value: number; image_url: string | null; tags: string[];
   description: string | null; created_at: string;
+  gallery_notes?: GalleryNoteSection[];
 }): Artwork {
   return {
     ...base,
+    gallery_notes: base.gallery_notes ?? [],
     image_url_web: base.image_url,
     image_url_thumb: base.image_url,
     native_width: null,
@@ -29,6 +33,24 @@ function art(base: {
 // ============================================================
 // ARTWORKS — 20 famous public-domain works
 // ============================================================
+//
+// ── MINTING NEW ARTWORKS FOR DROPS ──────────────────────────
+//
+// Every new artwork MUST include a `gallery_notes` array with 2–3 sections.
+//
+//   Required section:
+//     "Market Significance" — explains the artwork's tier and IV in gameplay
+//     terms (carry cost, curator demand, niche appeal, scarcity, etc.)
+//
+//   Pick 1–2 additional sections from:
+//     "Historical Context"  — provenance, commission history, when/where created
+//     "Technique"           — materials, method, what makes the execution notable
+//     "Cultural Impact"     — influence on later art, popular culture, public consciousness
+//
+//   Style: museum-label register. 2–3 sentences per section. Concise, factual,
+//   no marketing language. See existing entries below for tone reference.
+//
+// ─────────────────────────────────────────────────────────────
 export const SEED_ARTWORKS: Artwork[] = [
   // --- Tier A: IV ≥ 350k ---
   art({
@@ -42,6 +64,11 @@ export const SEED_ARTWORKS: Artwork[] = [
     image_url: "/artworks/art-001.jpg",
     tags: ["renaissance", "portrait", "iconic"],
     description: "The most famous painting in the world. Enigmatic smile, sfumato technique.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Begun in Florence around 1503, the portrait is believed to depict Lisa Gherardini, wife of a Florentine merchant. Leonardo carried the unfinished panel to France, where it entered the royal collection and eventually the Louvre." },
+      { heading: "Technique", body: "Leonardo's sfumato—ultra-thin translucent glazes built up over years—creates the imperceptible tonal transitions around the eyes and mouth. No brushstrokes are visible to the naked eye." },
+      { heading: "Market Significance", body: "Maximum IV in the game reflects unmatched cultural recognition. Weekly carry is the highest of any artwork, but universal curator demand and loan eligibility offset the cost for active stewards." },
+    ],
     created_at: new Date().toISOString(),
   }),
   art({
@@ -55,6 +82,11 @@ export const SEED_ARTWORKS: Artwork[] = [
     image_url: "/artworks/art-002.jpg",
     tags: ["post-impressionism", "landscape", "iconic"],
     description: "Swirling night sky over a village. One of the most recognized paintings in Western art.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Painted in June 1889 from the east-facing window of Van Gogh's room at the Saint-Paul-de-Mausole asylum in Saint-Rémy-de-Provence. The village below is partly imagined; the cypress in the foreground dominates the composition." },
+      { heading: "Technique", body: "Thick impasto swirls applied with loaded brushstrokes give the sky a turbulent, almost three-dimensional quality. Van Gogh worked wet-on-wet, completing the canvas in a single sustained session." },
+      { heading: "Market Significance", body: "Second-highest IV among seed artworks. As the second most reproduced painting in history, it draws broad curator appeal across taste profiles, making loan placement reliable despite heavy carry." },
+    ],
     created_at: new Date().toISOString(),
   }),
   art({
@@ -68,6 +100,11 @@ export const SEED_ARTWORKS: Artwork[] = [
     image_url: "/artworks/art-003.jpg",
     tags: ["baroque", "portrait", "dutch-golden-age"],
     description: 'Often called the "Mona Lisa of the North." Luminous pearl, enigmatic gaze.',
+    gallery_notes: [
+      { heading: "Historical Context", body: "A tronie—a character study rather than a commissioned portrait—the identity of the sitter remains unknown. The painting was virtually forgotten until its rediscovery in the late 19th century." },
+      { heading: "Technique", body: "Vermeer built the luminous pearl with just two strokes of lead white over dark underpainting. The turban's ultramarine pigment, ground from lapis lazuli, was more expensive than gold by weight." },
+      { heading: "Market Significance", body: "Tier A IV reflects its status as an exhibition centerpiece. Curators across multiple taste profiles request it, and its compact composition reproduces well in promotional materials, boosting exhibition visitor counts." },
+    ],
     created_at: new Date().toISOString(),
   }),
 
@@ -77,12 +114,17 @@ export const SEED_ARTWORKS: Artwork[] = [
     title: "The Great Wave off Kanagawa",
     artist: "Katsushika Hokusai",
     year: 1831,
-    medium: "Woodblock print",
+    medium: "Woodblock",
     tier: "B",
     insured_value: 200_000,
     image_url: "/artworks/art-004.jpg",
     tags: ["ukiyo-e", "landscape", "japanese"],
     description: "Towering wave with Mount Fuji in the background. Most iconic Japanese artwork.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Part of the series Thirty-six Views of Mount Fuji, published when Hokusai was about seventy. The print's composition influenced the French Impressionists after Japan opened to Western trade in the 1850s." },
+      { heading: "Technique", body: "Carved on cherry-wood blocks and printed with imported Prussian blue—a synthetic pigment new to Japan—that gave the wave its distinctive deep hue. Thousands of impressions were pulled, making it a multiple rather than a unique work." },
+      { heading: "Market Significance", body: "Tier B IV reflects the tension between extreme recognition and the existence of multiple impressions. Crossover appeal to both Japanese-art specialists and general curators keeps loan demand solid." },
+    ],
     created_at: new Date().toISOString(),
   }),
   art({
@@ -96,6 +138,11 @@ export const SEED_ARTWORKS: Artwork[] = [
     image_url: "/artworks/art-005.jpg",
     tags: ["post-impressionism", "jungle", "dreamlike"],
     description: "A nude reclining on a sofa in a lush jungle. Rousseau's largest and last painting.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Completed the year of Rousseau's death, The Dream is his largest canvas and the culmination of a self-taught career. He never visited a jungle; his lush vegetation was invented from visits to the Jardin des Plantes." },
+      { heading: "Cultural Impact", body: "The painting anticipated Surrealism by over a decade. André Breton and the Surrealists later claimed Rousseau as a spiritual predecessor, cementing the work's place in the avant-garde canon." },
+      { heading: "Market Significance", body: "Strong IV for Tier B, but its niche appeal—proto-Surrealism attracts fewer curator taste profiles—limits broad loan demand compared to more universally recognized works at this tier." },
+    ],
     created_at: new Date().toISOString(),
   }),
   art({
@@ -109,6 +156,11 @@ export const SEED_ARTWORKS: Artwork[] = [
     image_url: "/artworks/art-006.jpg",
     tags: ["pointillism", "landscape", "impressionism"],
     description: "Monumental pointillist painting of Parisians relaxing by the Seine.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Seurat spent two years on the canvas, producing over sixty preparatory oil studies and drawings. It debuted at the final Impressionist exhibition in 1886 and immediately divided critics." },
+      { heading: "Technique", body: "Painted entirely in small dots of pure color—Pointillism—designed to blend optically at viewing distance. Seurat applied the dots with near-mechanical precision, treating painting as applied color science." },
+      { heading: "Market Significance", body: "Tier B IV reflects strong academic and institutional appeal. Curators with conceptual or historical taste profiles value it highly, though its monumental scale narrative limits casual collector interest." },
+    ],
     created_at: new Date().toISOString(),
   }),
   art({
@@ -122,6 +174,11 @@ export const SEED_ARTWORKS: Artwork[] = [
     image_url: "/artworks/art-007.jpg",
     tags: ["renaissance", "mythology", "iconic"],
     description: "Venus rising from the sea on a shell. Masterpiece of the Italian Renaissance.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Likely commissioned by Lorenzo di Pierfrancesco de' Medici for his Villa di Castello. The subject draws on Poliziano's verse retelling of the Homeric Hymn, reflecting the Medici circle's revival of classical mythology." },
+      { heading: "Cultural Impact", body: "The painting established the canonical image of idealized female beauty in Western art. Its composition has been referenced continuously for five centuries, from academic painting to contemporary advertising." },
+      { heading: "Market Significance", body: "At 300k IV, it sits near the top of Tier B and approaches Tier A demand. Curators of nearly every taste profile recognize its draw power, making it one of the safest holds at this price point." },
+    ],
     created_at: new Date().toISOString(),
   }),
   art({
@@ -135,6 +192,11 @@ export const SEED_ARTWORKS: Artwork[] = [
     image_url: "/artworks/art-008.jpg",
     tags: ["american", "portrait", "regionalism"],
     description: "Farmer and daughter before a Gothic window. Most parodied American painting.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Wood spotted a small house with a Gothic window in Eldon, Iowa and imagined the kind of people who might live there. His sister and his dentist served as models for the pair." },
+      { heading: "Cultural Impact", body: "The most parodied painting in American culture, appearing in editorial cartoons, advertisements, and film. It defined—and arguably satirized—the image of rural American stoicism." },
+      { heading: "Market Significance", body: "Tier B IV reflects strong domestic recognition, but its specifically American identity limits international curator demand. Best paired with other American works for thematic exhibitions." },
+    ],
     created_at: new Date().toISOString(),
   }),
 
@@ -150,6 +212,11 @@ export const SEED_ARTWORKS: Artwork[] = [
     image_url: "/artworks/art-009.jpg",
     tags: ["american", "urban", "realism"],
     description: "Late-night diner scene. Captures urban loneliness and American noir.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Completed weeks after the attack on Pearl Harbor, the painting captures wartime urban anxiety. Hopper denied a direct connection, but the empty street and sealed interior resonated with a nation on edge." },
+      { heading: "Technique", body: "The diner has no visible entrance, trapping the figures inside a fluorescent-lit stage. Hopper's cinematic framing—wide angle, sharp diagonals, flattened depth—anticipated film noir composition." },
+      { heading: "Market Significance", body: "At the floor of Tier B, carry costs are manageable. Its noir-niche appeal attracts curators with urban or American specialties but limits broader placement compared to higher-IV works." },
+    ],
     created_at: new Date().toISOString(),
   }),
   art({
@@ -163,9 +230,14 @@ export const SEED_ARTWORKS: Artwork[] = [
     image_url: "/artworks/art-010.jpg",
     tags: ["art-nouveau", "romantic", "gold"],
     description: "Lovers entwined in gold. Klimt's most popular work.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Painted during Klimt's Golden Phase, The Kiss is widely believed to depict Klimt and his companion Emilie Flöge. The Austrian state purchased it directly from exhibition in 1908." },
+      { heading: "Technique", body: "Gold leaf is applied over oil paint, with the male figure's robe decorated in rectilinear blocks and the female's in circular floral motifs—gendered geometry that echoes Byzantine mosaics." },
+      { heading: "Market Significance", body: "Poster and merchandise ubiquity suppresses prestige relative to its recognition. IV sits at the low end of Tier B; curators may hesitate to feature an image audiences associate more with gift shops than galleries." },
+    ],
     created_at: new Date().toISOString(),
   }),
-  // --- Tier C: 10k–75k ---
+  // --- Tier C: 50k–75k ---
   art({
     id: "art-011",
     title: "Water Lilies (Nymphéas)",
@@ -177,6 +249,11 @@ export const SEED_ARTWORKS: Artwork[] = [
     image_url: "/artworks/art-011.jpg",
     tags: ["impressionism", "landscape", "nature"],
     description: "One of roughly 250 oil paintings of Monet's flower garden at Giverny.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Monet produced approximately 250 Water Lilies canvases over the last thirty years of his life, many while suffering from cataracts that shifted his color perception. This particular canvas dates to the middle of the series." },
+      { heading: "Technique", body: "The composition eliminates the horizon line entirely, presenting the pond surface as an all-over field. This proto-abstract approach anticipated the large-scale color-field painting of the mid-20th century." },
+      { heading: "Market Significance", body: "Tier C IV reflects the series' sheer volume—roughly 250 canvases dilute individual scarcity. Demand is steady but unexceptional; curators treat Water Lilies as reliable filler rather than exhibition anchors." },
+    ],
     created_at: new Date().toISOString(),
   }),
   art({
@@ -190,6 +267,11 @@ export const SEED_ARTWORKS: Artwork[] = [
     image_url: "/artworks/art-012.jpg",
     tags: ["expressionism", "iconic", "anxiety"],
     description: "Agonized figure against a tumultuous sky. Symbol of modern existential angst.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Munch described an anxiety attack on a walk at sunset as the inspiration. The image was stolen twice—from the National Gallery in 1994 and the Munch Museum in 2004—both times recovered." },
+      { heading: "Cultural Impact", body: "The figure's open mouth has become the universal icon of anxiety, reproduced on everything from emoji to inflatable toys. Its cultural penetration far exceeds that of most Tier A works." },
+      { heading: "Market Significance", body: "Four distinct versions by Munch (two paintings, a lithograph, and a pastel) limit valuation of any single piece. Tier C IV reflects this multiplicity despite near-universal name recognition." },
+    ],
     created_at: new Date().toISOString(),
   }),
   art({
@@ -203,6 +285,11 @@ export const SEED_ARTWORKS: Artwork[] = [
     image_url: "/artworks/art-013.jpg",
     tags: ["romanticism", "political", "iconic"],
     description: "Allegorical figure of Liberty storms the barricades during the French July Revolution.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Painted in the autumn of 1830 to commemorate the July Revolution that toppled Charles X. Delacroix, though not a barricade fighter himself, witnessed the uprising from the streets of Paris." },
+      { heading: "Cultural Impact", body: "The painting established the visual template for revolutionary imagery, directly inspiring the Statue of Liberty and countless political posters. It remains France's most reproduced political painting." },
+      { heading: "Market Significance", body: "Tier B IV with strong appeal to curators specializing in political and historical themes. Its overtly political subject limits placement in purely aesthetic exhibitions but anchors any revolution-themed show." },
+    ],
     created_at: new Date().toISOString(),
   }),
   art({
@@ -216,10 +303,15 @@ export const SEED_ARTWORKS: Artwork[] = [
     image_url: "/artworks/art-014.jpg",
     tags: ["post-impressionism", "portrait", "self-portrait"],
     description: "Van Gogh shortly after severing his ear. Japanese print visible in the background.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Painted in January 1889, weeks after Van Gogh severed part of his left ear following a confrontation with Gauguin. The bandage covers the right ear because Van Gogh worked from a mirror." },
+      { heading: "Technique", body: "The mirror-reversed composition places a ukiyo-e print in the background, signaling Van Gogh's deep engagement with Japanese aesthetics. Flat planes of color and bold outlines reflect that influence." },
+      { heading: "Market Significance", body: "Tier C IV reflects Van Gogh's prolific self-portrait output—over thirty survive—which tempers individual scarcity. Strong narrative appeal draws curators, but supply keeps the valuation moderate." },
+    ],
     created_at: new Date().toISOString(),
   }),
 
-  // --- Tier D: IV < 10k ---
+  // --- Tier D: IV < 50k ---
   art({
     id: "art-015",
     title: "Composition II in Red, Blue, and Yellow",
@@ -227,23 +319,33 @@ export const SEED_ARTWORKS: Artwork[] = [
     year: 1930,
     medium: "Oil on canvas",
     tier: "D",
-    insured_value: 8_000,
+    insured_value: 35_000,
     image_url: "/artworks/art-015.jpg",
     tags: ["de-stijl", "abstract", "geometric"],
     description: "Primary colors in rectangular blocks. The quintessential De Stijl composition.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Created in Paris in 1930 as part of Mondrian's Neo-Plasticism program, which sought to reduce painting to its essential elements: horizontal and vertical lines with primary colors." },
+      { heading: "Technique", body: "Mondrian obsessively adjusted line positions over weeks, scraping and repainting until the asymmetric balance felt resolved. X-ray analysis reveals multiple prior configurations beneath the surface." },
+      { heading: "Market Significance", body: "Highest IV in Tier D, reflecting the niche appeal of pure geometric abstraction. Affordable entry point with modest carry. Pairs well with Kandinsky for dedicated abstract exhibitions." },
+    ],
     created_at: new Date().toISOString(),
   }),
   art({
     id: "art-016",
-    title: "Composition VIII (Lithograph)",
+    title: "Composition VIII",
     artist: "Wassily Kandinsky",
     year: 1923,
-    medium: "Lithograph",
+    medium: "Oil on canvas",
     tier: "D",
-    insured_value: 5_000,
+    insured_value: 25_000,
     image_url: "/artworks/art-016.jpg",
-    tags: ["abstract", "geometric", "edition"],
-    description: "Geometric abstraction lithograph. Dynamic circles, triangles, and lines.",
+    tags: ["abstract", "geometric", "bauhaus"],
+    description: "Dynamic interplay of circles, triangles, and lines. A landmark of geometric abstraction from Kandinsky's Bauhaus period.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Painted during Kandinsky's first year teaching at the Bauhaus in Weimar. The shift from earlier expressionist abstraction to crisp geometric forms marks the beginning of his mature analytical period." },
+      { heading: "Technique", body: "Kandinsky mapped shapes to spiritual concepts—circles as cosmic, triangles as aggressive—composing the canvas like a musical score. The precise geometry was drafted with compass and ruler before painting." },
+      { heading: "Market Significance", body: "Mid-range Tier D with manageable carry, useful as a complement to Mondrian for abstract-themed shows. Curators with design or Bauhaus specialties provide occasional loan demand." },
+    ],
     created_at: new Date().toISOString(),
   }),
   art({
@@ -253,10 +355,15 @@ export const SEED_ARTWORKS: Artwork[] = [
     year: 1514,
     medium: "Engraving",
     tier: "D",
-    insured_value: 4_500,
+    insured_value: 22_000,
     image_url: "/artworks/art-017.jpg",
     tags: ["renaissance", "engraving", "allegorical"],
     description: "A brooding angel surrounded by scientific instruments. One of the most analyzed prints in art history.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "One of Dürer's three Master Prints alongside Knight, Death and the Devil and Saint Jerome in His Study. The magic square in the upper right and scattered geometric solids have generated five centuries of scholarly analysis." },
+      { heading: "Cultural Impact", body: "The engraving established melancholy as a subject worthy of intellectual respect, linking creative genius with depressive temperament. It remains the most analyzed print in Western art history." },
+      { heading: "Market Significance", body: "As an engraving, multiple impressions exist, capping individual value at Tier D. Its scholarly mystique specifically attracts The Archivist, making it a strategic hold for players pursuing that legendary curator." },
+    ],
     created_at: new Date().toISOString(),
   }),
   art({
@@ -264,38 +371,416 @@ export const SEED_ARTWORKS: Artwork[] = [
     title: "Fine Wind, Clear Morning (Red Fuji)",
     artist: "Katsushika Hokusai",
     year: 1831,
-    medium: "Woodblock print",
+    medium: "Woodblock",
     tier: "D",
-    insured_value: 6_000,
+    insured_value: 28_000,
     image_url: "/artworks/art-018.jpg",
     tags: ["ukiyo-e", "landscape", "japanese"],
     description: "Mount Fuji bathed in red morning light. From Thirty-six Views of Mount Fuji.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "The second most famous print from Hokusai's Thirty-six Views of Mount Fuji series, depicting the mountain flushed red by the light of dawn in late summer. It is sometimes called Red Fuji." },
+      { heading: "Technique", body: "The composition is strikingly minimal—mountain, sky, and a fringe of trees with almost no detail. The dawn-red coloring was achieved through multiple overprinted woodblock passes." },
+      { heading: "Market Significance", body: "Tier D as a woodblock multiple. Functions as a companion piece to The Great Wave (art-004); holding both creates thematic pairing opportunities that curators of Japanese art value." },
+    ],
     created_at: new Date().toISOString(),
   }),
   art({
     id: "art-019",
-    title: "The Vitruvian Man (Reproduction)",
+    title: "The Vitruvian Man",
     artist: "Leonardo da Vinci",
     year: 1490,
-    medium: "Giclée print",
+    medium: "Pen, ink, and metalpoint on paper",
     tier: "D",
-    insured_value: 3_000,
+    insured_value: 15_000,
     image_url: "/artworks/art-019.jpg",
-    tags: ["renaissance", "anatomy", "edition"],
-    description: "High-quality reproduction of da Vinci's study of ideal human proportions.",
+    tags: ["renaissance", "anatomy", "drawing"],
+    description: "Da Vinci's study of ideal human proportions inscribed in circle and square. The defining image of Renaissance humanism.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "A study of the proportions described by the Roman architect Vitruvius, drawn around 1490 in Leonardo's Milan notebook. The original is kept in controlled storage at the Gallerie dell'Accademia and rarely displayed due to its fragility." },
+      { heading: "Technique", body: "Executed in pen, ink, and metalpoint on paper—a medium inherently fragile and light-sensitive. The dual superimposed poses within circle and square required precise geometric drafting." },
+      { heading: "Market Significance", body: "Lowest IV in the game at 15,000 cr. Carry is minimal but not zero. Its extreme fragility narrative explains why curators rarely demand exhibition loans, limiting its utility beyond portfolio diversity." },
+    ],
     created_at: new Date().toISOString(),
   }),
   art({
     id: "art-020",
-    title: "Starry Night Over the Rhône (Print)",
+    title: "Starry Night Over the Rhône",
     artist: "Vincent van Gogh",
     year: 1888,
-    medium: "Giclée print",
+    medium: "Oil on canvas",
     tier: "D",
-    insured_value: 3_500,
+    insured_value: 18_000,
     image_url: "/artworks/art-020.jpg",
-    tags: ["post-impressionism", "landscape", "edition"],
-    description: "Authorized print of Van Gogh's night scene along the Rhône in Arles.",
+    tags: ["post-impressionism", "landscape", "nocturne"],
+    description: "Gas lamps reflecting on the Rhône under a vast night sky. Painted months before The Starry Night, equally haunting.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Painted outdoors on the banks of the Rhône in Arles in September 1888, months before the more famous Starry Night. Van Gogh was experimenting with painting night scenes under actual starlight and gaslight." },
+      { heading: "Technique", body: "Chrome yellow gaslamp reflections juxtaposed against ultramarine sky and water create a vibrating complementary-color effect. The paint application is looser and more spontaneous than the later Saint-Rémy canvas." },
+      { heading: "Market Significance", body: "Tier D IV reflects being perpetually overshadowed by its more famous sibling (art-002). Nocturne-niche curators appreciate it, but general audiences and most curators reach for The Starry Night first." },
+    ],
+    created_at: new Date().toISOString(),
+  }),
+
+  // --- Drop 2: 20 more artworks ---
+
+  // Tier A
+  art({
+    id: "art-021",
+    title: "The Night Watch",
+    artist: "Rembrandt van Rijn",
+    year: 1642,
+    medium: "Oil on canvas",
+    tier: "A",
+    insured_value: 550_000,
+    image_url: "/artworks/art-021.jpg",
+    tags: ["baroque", "group-portrait", "dutch-golden-age"],
+    description: "Militia company of Captain Frans Banning Cocq. Largest and most famous Dutch Golden Age painting.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Commissioned by the civic militia for their new hall, the painting was radical for depicting a group portrait as a dynamic action scene. It hung in the Amsterdam town hall for over a century before entering the Rijksmuseum." },
+      { heading: "Technique", body: "Rembrandt used extreme chiaroscuro to spotlight the captain and lieutenant while two dozen other figures emerge from deep shadow. The canvas was trimmed on all four sides in 1715 to fit between columns." },
+      { heading: "Market Significance", body: "Tier A IV reflects its status as the crown jewel of the Dutch Golden Age. Curators with historical and baroque profiles compete for loan access, making carry costs manageable for active stewards." },
+    ],
+    created_at: new Date().toISOString(),
+  }),
+  art({
+    id: "art-022",
+    title: "The Garden of Earthly Delights",
+    artist: "Hieronymus Bosch",
+    year: 1505,
+    medium: "Oil on oak panels",
+    tier: "A",
+    insured_value: 500_000,
+    image_url: "/artworks/art-022.jpg",
+    tags: ["northern-renaissance", "triptych", "flemish", "surreal"],
+    description: "A monumental triptych depicting paradise, earthly pleasures, and damnation. Bosch's most ambitious and enigmatic work.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Created for the Nassau family of Brussels, the triptych entered the Spanish royal collection and has been at the Prado since 1939. Its meaning remains fiercely debated—morality tale, alchemical allegory, or heretical vision." },
+      { heading: "Technique", body: "The three panels unfold from a grisaille exterior globe. Bosch populated the interior with hundreds of hybrid creatures, impossible architecture, and surreal vignettes rendered in meticulous miniaturist detail." },
+      { heading: "Market Significance", body: "Tier A IV reflects its art-historical gravity and universal curator demand. The triptych format and density of detail generate exceptionally long viewer dwell times at exhibitions." },
+    ],
+    created_at: new Date().toISOString(),
+  }),
+
+  // Tier B
+  art({
+    id: "art-023",
+    title: "Nighthawks",
+    artist: "Edward Hopper",
+    year: 1942,
+    medium: "Oil on canvas",
+    tier: "B",
+    insured_value: 280_000,
+    image_url: "/artworks/art-023.jpg",
+    tags: ["american", "urban", "realism"],
+    description: "Late-night diner on a deserted city street. An icon of American loneliness and noir atmosphere.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Painted weeks after Pearl Harbor, the empty street and fluorescent-lit interior have been read as wartime anxiety. Hopper denied any symbolic intent, citing a restaurant on Greenwich Avenue as his inspiration." },
+      { heading: "Technique", body: "The diner has no visible door—viewers cannot enter the scene. Hopper used an almost cinematic wide-angle perspective, flooding the interior with greenish fluorescent light against the dark brownstone exterior." },
+      { heading: "Market Significance", body: "Tier B reflects broad American-art curator demand and pop-culture recognition. The no-door motif makes it a perennial discussion piece, boosting exhibition visitor engagement." },
+    ],
+    created_at: new Date().toISOString(),
+  }),
+  art({
+    id: "art-024",
+    title: "The Kiss",
+    artist: "Gustav Klimt",
+    year: 1908,
+    medium: "Oil and gold leaf on canvas",
+    tier: "B",
+    insured_value: 320_000,
+    image_url: "/artworks/art-024.jpg",
+    tags: ["art-nouveau", "portrait", "iconic"],
+    description: "Couple embracing on a flower-strewn cliff, wrapped in golden robes. Klimt's most celebrated work.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Painted during Klimt's 'Golden Phase,' the work was purchased by the Austrian state before it was finished. It has remained at the Belvedere in Vienna for over a century." },
+      { heading: "Technique", body: "Real gold leaf is applied over oil paint in geometric patterns inspired by Byzantine mosaics and Ravenna's church interiors. The contrast between naturalistic faces and flat decorative robes creates a dreamlike tension." },
+      { heading: "Market Significance", body: "Strong Tier B IV driven by universal romantic appeal. Curators across all taste profiles request it, and its gold-leaf surface photographs dramatically, boosting exhibition marketing materials." },
+    ],
+    created_at: new Date().toISOString(),
+  }),
+  art({
+    id: "art-025",
+    title: "Wanderer Above the Sea of Fog",
+    artist: "Caspar David Friedrich",
+    year: 1818,
+    medium: "Oil on canvas",
+    tier: "B",
+    insured_value: 200_000,
+    image_url: "/artworks/art-025.jpg",
+    tags: ["romanticism", "landscape", "german"],
+    description: "A man in a frock coat stands atop a rocky precipice gazing over a fog-filled valley.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Friedrich painted this in Dresden shortly after the Napoleonic Wars. The figure's identity is debated—possibly a Saxon officer or a composite ideal. The painting hung in private collections until entering the Hamburger Kunsthalle." },
+      { heading: "Cultural Impact", body: "The most reproduced image of European Romanticism, used on countless book covers, film posters, and album art. The Rückenfigur—figure seen from behind—became Friedrich's signature device." },
+      { heading: "Market Significance", body: "Tier B IV reflects strong recognition and Romantic-landscape curator demand. Its compact composition and lone-figure motif make it versatile for exhibitions across multiple themes." },
+    ],
+    created_at: new Date().toISOString(),
+  }),
+  art({
+    id: "art-026",
+    title: "Liberty Leading the People",
+    artist: "Eugène Delacroix",
+    year: 1830,
+    medium: "Oil on canvas",
+    tier: "B",
+    insured_value: 260_000,
+    image_url: "/artworks/art-026.jpg",
+    tags: ["romanticism", "historical", "french"],
+    description: "Allegorical figure of Liberty leads revolutionaries over a barricade during the July Revolution.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Painted within months of the July Revolution of 1830, which toppled Charles X. Delacroix witnessed the street fighting and combined reportage with classical allegory. The French state purchased it in 1831." },
+      { heading: "Technique", body: "Delacroix used a pyramidal composition anchored by Liberty's raised tricolor. Smoke, debris, and bodies create depth while the palette shifts from cool shadows to warm sunlight on the central figures." },
+      { heading: "Market Significance", body: "Tier B IV reflects political-history appeal and French institutional prestige. Curators with historical profiles consistently request it, though its revolutionary subject narrows some private-exhibition opportunities." },
+    ],
+    created_at: new Date().toISOString(),
+  }),
+  art({
+    id: "art-027",
+    title: "Water Lilies (Nymphéas)",
+    artist: "Claude Monet",
+    year: 1906,
+    medium: "Oil on canvas",
+    tier: "B",
+    insured_value: 240_000,
+    image_url: "/artworks/art-027.jpg",
+    tags: ["impressionism", "landscape", "series"],
+    description: "Shimmering surface of Monet's Giverny pond. Part of the 250-painting Water Lilies cycle.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Monet spent the last thirty years of his life painting his water garden at Giverny. This canvas is from the middle period of the series, before the monumental late murals now at the Orangerie." },
+      { heading: "Technique", body: "No horizon line or sky—only the pond surface, reflections, and floating lilies. Monet's broken brushwork dissolves form into pure color, anticipating abstract painting by decades." },
+      { heading: "Market Significance", body: "Tier B IV reflects the series' massive supply (250+ canvases) balanced against Monet's universal name recognition. Impressionism curators always want one, making loan placement reliable." },
+    ],
+    created_at: new Date().toISOString(),
+  }),
+
+  // Tier C
+  art({
+    id: "art-028",
+    title: "The Scream",
+    artist: "Edvard Munch",
+    year: 1893,
+    medium: "Tempera and crayon on cardboard",
+    tier: "C",
+    insured_value: 65_000,
+    image_url: "/artworks/art-028.jpg",
+    tags: ["expressionism", "iconic", "norwegian"],
+    description: "Agonized figure on a bridge under a blood-red sky. The most famous image of modern anxiety.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Munch created four versions between 1893 and 1910. This tempera-on-cardboard version is the earliest. Munch described the inspiration as a walk at sunset where 'the sky turned blood red' and he felt 'an infinite scream passing through nature.'" },
+      { heading: "Cultural Impact", body: "The wavy figure has become a universal emoji of anxiety, appearing on everything from inflatable toys to the Apple emoji keyboard. Its fame as a meme paradoxically diminishes its perceived market seriousness." },
+      { heading: "Market Significance", body: "Tier C IV reflects the tension between extreme pop-culture recognition and the work's fragile cardboard support, which limits exhibition loans and insurance terms." },
+    ],
+    created_at: new Date().toISOString(),
+  }),
+  art({
+    id: "art-029",
+    title: "Arrangement in Grey and Black No.1",
+    artist: "James McNeill Whistler",
+    year: 1871,
+    medium: "Oil on canvas",
+    tier: "C",
+    insured_value: 55_000,
+    image_url: "/artworks/art-029.jpg",
+    tags: ["realism", "portrait", "american"],
+    description: "Whistler's mother seated in profile. One of the most parodied paintings in American art.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Whistler insisted the painting was a formal exercise in tonal harmony, not a sentimental portrait. The title emphasizes color arrangement over subject matter—a radical idea in 1871." },
+      { heading: "Market Significance", body: "Tier C IV reflects its fame as a cultural icon versus limited curator demand outside American-art specialists. Heavy parody exposure has dulled its critical cachet." },
+    ],
+    created_at: new Date().toISOString(),
+  }),
+  art({
+    id: "art-030",
+    title: "The Sleeping Gypsy",
+    artist: "Henri Rousseau",
+    year: 1897,
+    medium: "Oil on canvas",
+    tier: "C",
+    insured_value: 60_000,
+    image_url: "/artworks/art-030.jpg",
+    tags: ["post-impressionism", "dreamlike", "nocturne"],
+    description: "A lion sniffs a sleeping mandolin player under a full moon in the desert. Pure naive poetry.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Rousseau offered the painting to his hometown of Laval, which declined it. It was rediscovered by the art dealer Daniel-Henry Kahnweiler and entered MoMA's collection in 1939." },
+      { heading: "Technique", body: "Rousseau's self-taught flatness—no atmospheric perspective, uniform sharpness from foreground to horizon—creates a dreamlike stillness. The moonlight is impossibly even, casting no shadows." },
+      { heading: "Market Significance", body: "Tier C IV reflects niche proto-Surrealist appeal. Curators specializing in naive art or Surrealism history value it, but mainstream audiences often overlook it in favor of Rousseau's jungle paintings." },
+    ],
+    created_at: new Date().toISOString(),
+  }),
+  art({
+    id: "art-031",
+    title: "The Death of Marat",
+    artist: "Jacques-Louis David",
+    year: 1793,
+    medium: "Oil on canvas",
+    tier: "C",
+    insured_value: 70_000,
+    image_url: "/artworks/art-031.jpg",
+    tags: ["neoclassicism", "historical", "french"],
+    description: "The assassinated revolutionary Jean-Paul Marat slumped in his medicinal bath. A political icon rendered as secular martyr.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "David painted the work within months of Marat's assassination by Charlotte Corday in July 1793. As a fellow Jacobin, David turned the murder into propaganda—a revolutionary pietà—displayed in the National Convention." },
+      { heading: "Technique", body: "David stripped the scene to essentials: bare wall, wooden crate, limp arm. The lighting borrows directly from Caravaggio's entombment scenes, elevating a bathtub murder to the register of sacred art." },
+      { heading: "Market Significance", body: "Tier C IV reflects its art-historical weight balanced against the narrow political-history niche. Curators mounting French Revolution or Neoclassicism exhibitions compete for it; general audiences find it disturbing." },
+    ],
+    created_at: new Date().toISOString(),
+  }),
+  art({
+    id: "art-032",
+    title: "Ophelia",
+    artist: "John Everett Millais",
+    year: 1852,
+    medium: "Oil on canvas",
+    tier: "C",
+    insured_value: 58_000,
+    image_url: "/artworks/art-032.jpg",
+    tags: ["pre-raphaelite", "literary", "british"],
+    description: "Shakespeare's Ophelia floating among wildflowers moments before drowning. Hyper-detailed botanical realism.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Millais painted the background on the banks of the Hogsmill River in Surrey, working outdoors for five months. Model Elizabeth Siddal posed in a bathtub of water heated by oil lamps—she caught a severe cold." },
+      { heading: "Technique", body: "Every flower is botanically accurate and carries symbolic meaning from Victorian flower language. Millais painted wet-on-wet over a wet white ground to achieve the luminous, almost photographic detail." },
+      { heading: "Market Significance", body: "Tier C IV reflects strong Pre-Raphaelite niche demand but limited crossover to modern-art curators. Its literary subject and botanical detail make it a reliable draw for themed exhibitions." },
+    ],
+    created_at: new Date().toISOString(),
+  }),
+  art({
+    id: "art-033",
+    title: "A Bar at the Folies-Bergère",
+    artist: "Édouard Manet",
+    year: 1882,
+    medium: "Oil on canvas",
+    tier: "C",
+    insured_value: 62_000,
+    image_url: "/artworks/art-033.jpg",
+    tags: ["impressionism", "portrait", "french"],
+    description: "A barmaid gazes out while her reflection in the mirror behind reveals the bustling café-concert.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Manet's last major work, painted while suffering from locomotor ataxia. The deliberately 'wrong' mirror reflection has generated over a century of art-historical debate about spatial ambiguity and the male gaze." },
+      { heading: "Technique", body: "The still life on the bar—bottles, oranges, roses—is painted with bravura brushwork, while the reflected crowd dissolves into impressionistic haze. The spatial impossibility is calculated, not accidental." },
+      { heading: "Market Significance", body: "Tier C IV reflects its art-historical importance tempered by Manet's relative under-recognition among general audiences compared to Monet. Academic curators value it highly." },
+    ],
+    created_at: new Date().toISOString(),
+  }),
+  art({
+    id: "art-034",
+    title: "The Arnolfini Portrait",
+    artist: "Jan van Eyck",
+    year: 1434,
+    medium: "Oil on oak panel",
+    tier: "C",
+    insured_value: 68_000,
+    image_url: "/artworks/art-034.jpg",
+    tags: ["northern-renaissance", "portrait", "flemish"],
+    description: "A merchant and his wife in a richly furnished room. Pioneering use of oil glazes and hidden symbolism.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Long thought to depict a wedding ceremony, recent scholarship suggests it may be a memorial portrait—the wife may already have been dead. The convex mirror reflects two witnesses, one possibly Van Eyck himself." },
+      { heading: "Technique", body: "Van Eyck's oil-glaze technique—dozens of translucent layers over months—achieved a luminosity impossible in tempera. The chandelier, mirror, and dog fur demonstrate microscopic observational fidelity." },
+      { heading: "Market Significance", body: "Tier C IV reflects its foundational art-historical status balanced against Northern Renaissance's narrower curator pool compared to Italian Renaissance or Impressionism." },
+    ],
+    created_at: new Date().toISOString(),
+  }),
+
+  // Tier D
+  art({
+    id: "art-035",
+    title: "The Hay Wain",
+    artist: "John Constable",
+    year: 1821,
+    medium: "Oil on canvas",
+    tier: "D",
+    insured_value: 22_000,
+    image_url: "/artworks/art-035.jpg",
+    tags: ["romanticism", "landscape", "british"],
+    description: "A horse-drawn cart fording a stream beside a cottage. Quintessential English pastoral scene.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Constable painted the scene at Flatford Mill in Suffolk, using his childhood landscape as lifelong subject matter. The painting failed to sell in London but won a gold medal at the Paris Salon of 1824." },
+      { heading: "Market Significance", body: "Tier D IV reflects deep British-landscape niche appeal but minimal international curator demand. Reliable for pastoral-themed exhibitions but rarely requested outside that context." },
+    ],
+    created_at: new Date().toISOString(),
+  }),
+  art({
+    id: "art-036",
+    title: "The Tower of Babel",
+    artist: "Pieter Bruegel the Elder",
+    year: 1563,
+    medium: "Oil on oak panel",
+    tier: "D",
+    insured_value: 28_000,
+    image_url: "/artworks/art-036.jpg",
+    tags: ["northern-renaissance", "biblical", "flemish"],
+    description: "A colossal unfinished tower spiraling skyward. Bruegel's meditation on human ambition and divine punishment.",
+    gallery_notes: [
+      { heading: "Technique", body: "Bruegel packed hundreds of tiny figures and construction details into the tower's spiraling ramps. The structure is modeled on the Roman Colosseum, which Bruegel sketched during his Italian travels." },
+      { heading: "Market Significance", body: "Tier D IV reflects the Northern Renaissance niche. The painting's complexity rewards close viewing in exhibitions, generating longer dwell times and higher visitor satisfaction scores." },
+    ],
+    created_at: new Date().toISOString(),
+  }),
+  art({
+    id: "art-037",
+    title: "Impression, Sunrise",
+    artist: "Claude Monet",
+    year: 1872,
+    medium: "Oil on canvas",
+    tier: "D",
+    insured_value: 25_000,
+    image_url: "/artworks/art-037.jpg",
+    tags: ["impressionism", "landscape", "french"],
+    description: "Le Havre harbor at dawn. The painting that inadvertently named the Impressionist movement.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Shown at the first Impressionist exhibition in 1874, critic Louis Leroy used its title mockingly: 'Impression—I was certain of it.' The insult became the movement's badge of honor." },
+      { heading: "Market Significance", body: "Tier D IV reflects its historical importance versus modest visual impact—a small, quickly painted sketch. Art-history curators value the provenance story more than the canvas itself." },
+    ],
+    created_at: new Date().toISOString(),
+  }),
+  art({
+    id: "art-038",
+    title: "Olympia",
+    artist: "Édouard Manet",
+    year: 1863,
+    medium: "Oil on canvas",
+    tier: "D",
+    insured_value: 30_000,
+    image_url: "/artworks/art-038.jpg",
+    tags: ["realism", "portrait", "french"],
+    description: "A reclining nude gazes directly at the viewer. Scandalized the 1865 Paris Salon.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "Manet's confrontational reworking of Titian's Venus of Urbino replaced idealized beauty with a contemporary courtesan. Critics were outraged by her direct gaze and the Black servant's presence, which remains a subject of postcolonial critique." },
+      { heading: "Market Significance", body: "Tier D IV reflects its canonical art-historical importance offset by exhibition sensitivity around its racial and sexual politics. Curators must contextualize carefully, limiting casual loan requests." },
+    ],
+    created_at: new Date().toISOString(),
+  }),
+  art({
+    id: "art-039",
+    title: "The Gleaners",
+    artist: "Jean-François Millet",
+    year: 1857,
+    medium: "Oil on canvas",
+    tier: "D",
+    insured_value: 20_000,
+    image_url: "/artworks/art-039.jpg",
+    tags: ["realism", "landscape", "french"],
+    description: "Three peasant women bent over a harvested field, gathering leftover grain. A monument to rural labor.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "The painting outraged bourgeois critics who saw it as dangerously socialist—depicting the rural poor with the monumental dignity usually reserved for classical heroes. It entered the Louvre collection via public subscription." },
+      { heading: "Market Significance", body: "Tier D IV reflects niche realism-and-social-history appeal. Academic curators value it for thematic exhibitions on labor, class, and 19th-century France, but general audiences pass it by." },
+    ],
+    created_at: new Date().toISOString(),
+  }),
+  art({
+    id: "art-040",
+    title: "The Raft of the Medusa",
+    artist: "Théodore Géricault",
+    year: 1819,
+    medium: "Oil on canvas",
+    tier: "D",
+    insured_value: 26_000,
+    image_url: "/artworks/art-040.jpg",
+    tags: ["romanticism", "historical", "french"],
+    description: "Survivors of the frigate Méduse on a makeshift raft, waving at a distant ship. A political scandal rendered as epic drama.",
+    gallery_notes: [
+      { heading: "Historical Context", body: "The shipwreck was a national scandal caused by an incompetent aristocratic captain. Géricault interviewed survivors and studied cadavers in the morgue to achieve unflinching realism. The painting was a sensation at the 1819 Salon." },
+      { heading: "Market Significance", body: "Tier D IV reflects the monumental canvas size (nearly 5×7 meters) that limits exhibition venues, paired with strong art-historical demand. Only institutions with large galleries can accommodate it." },
+    ],
     created_at: new Date().toISOString(),
   }),
 ];
@@ -323,7 +808,7 @@ export const SEED_NPCS: Npc[] = [
       ],
       loan_fees: { base_rate: 0.0025 },
     },
-    unlock_tier: "beginner",
+    unlock_tier: "emerging",
     created_at: new Date().toISOString(),
   },
   {
@@ -342,7 +827,7 @@ export const SEED_NPCS: Npc[] = [
       exhibitions: [],
       loan_fees: { base_rate: 0.0025 },
     },
-    unlock_tier: "beginner",
+    unlock_tier: "emerging",
     created_at: new Date().toISOString(),
   },
   {
@@ -361,7 +846,7 @@ export const SEED_NPCS: Npc[] = [
       exhibitions: [],
       loan_fees: { base_rate: 0.0025 },
     },
-    unlock_tier: "beginner",
+    unlock_tier: "emerging",
     created_at: new Date().toISOString(),
   },
   {
@@ -383,7 +868,7 @@ export const SEED_NPCS: Npc[] = [
       ],
       loan_fees: { base_rate: 0.0045 },
     },
-    unlock_tier: "beginner",
+    unlock_tier: "emerging",
     created_at: new Date().toISOString(),
   },
   {
@@ -404,7 +889,7 @@ export const SEED_NPCS: Npc[] = [
       ],
       loan_fees: { base_rate: 0.0045 },
     },
-    unlock_tier: "beginner",
+    unlock_tier: "emerging",
     created_at: new Date().toISOString(),
   },
   {
@@ -423,7 +908,7 @@ export const SEED_NPCS: Npc[] = [
       exhibitions: [],
       loan_fees: { base_rate: 0.0045 },
     },
-    unlock_tier: "beginner",
+    unlock_tier: "emerging",
     created_at: new Date().toISOString(),
   },
   {
@@ -444,7 +929,7 @@ export const SEED_NPCS: Npc[] = [
       ],
       loan_fees: { base_rate: 0.0045 },
     },
-    unlock_tier: "mid",
+    unlock_tier: "established",
     created_at: new Date().toISOString(),
   },
   {
@@ -466,7 +951,7 @@ export const SEED_NPCS: Npc[] = [
       ],
       loan_fees: { base_rate: 0.0075 },
     },
-    unlock_tier: "mid",
+    unlock_tier: "established",
     created_at: new Date().toISOString(),
   },
   {
@@ -487,7 +972,7 @@ export const SEED_NPCS: Npc[] = [
       ],
       loan_fees: { base_rate: 0.0075 },
     },
-    unlock_tier: "mid",
+    unlock_tier: "established",
     created_at: new Date().toISOString(),
   },
   {
@@ -508,7 +993,7 @@ export const SEED_NPCS: Npc[] = [
       ],
       loan_fees: { base_rate: 0.0075 },
     },
-    unlock_tier: "mid",
+    unlock_tier: "established",
     created_at: new Date().toISOString(),
   },
   {
@@ -530,7 +1015,7 @@ export const SEED_NPCS: Npc[] = [
       ],
       loan_fees: { base_rate: 0.012 },
     },
-    unlock_tier: "whale",
+    unlock_tier: "patron",
     created_at: new Date().toISOString(),
   },
   {
@@ -551,7 +1036,7 @@ export const SEED_NPCS: Npc[] = [
       ],
       loan_fees: { base_rate: 0.012 },
     },
-    unlock_tier: "whale",
+    unlock_tier: "patron",
     created_at: new Date().toISOString(),
   },
 
@@ -563,7 +1048,7 @@ export const SEED_NPCS: Npc[] = [
     npc_tier: "primary",
     slug: "galleria-north",
     specialty: "New listings, fair prices",
-    description: "Reputable primary gallery. Offers fair market prices for consignments. Good for beginners.",
+    description: "Reputable primary gallery. Offers fair market prices for consignments. Good for emerging collectors.",
     traits: { commission: 0.10, reliability: "high" },
     credits: 15_000,
     prestige: 40,
@@ -572,7 +1057,7 @@ export const SEED_NPCS: Npc[] = [
       services: ["Consignment", "Appraisal", "New artist listings"],
       consignment_terms: { commission_rate: 0.10, min_iv: 1_000 },
     },
-    unlock_tier: "beginner",
+    unlock_tier: "emerging",
     created_at: new Date().toISOString(),
   },
   {
@@ -591,7 +1076,7 @@ export const SEED_NPCS: Npc[] = [
       services: ["Resale brokerage", "Market analysis", "Bulk deals"],
       consignment_terms: { commission_rate: 0.08, min_iv: 500 },
     },
-    unlock_tier: "beginner",
+    unlock_tier: "emerging",
     created_at: new Date().toISOString(),
   },
   {
@@ -610,7 +1095,7 @@ export const SEED_NPCS: Npc[] = [
       services: ["Private sales", "Discreet brokerage", "VIP introductions"],
       consignment_terms: { commission_rate: 0.06, min_iv: 50_000 },
     },
-    unlock_tier: "whale",
+    unlock_tier: "connoisseur",
     created_at: new Date().toISOString(),
   },
   {
@@ -629,7 +1114,7 @@ export const SEED_NPCS: Npc[] = [
       services: ["Condition reports", "Provenance verification", "IV enhancement"],
       consignment_terms: { commission_rate: 0.12, min_iv: 2_000 },
     },
-    unlock_tier: "mid",
+    unlock_tier: "established",
     created_at: new Date().toISOString(),
   },
   {
@@ -648,7 +1133,7 @@ export const SEED_NPCS: Npc[] = [
       services: ["Collection strategy", "Acquisition planning", "Deaccession advice"],
       consignment_terms: { commission_rate: 0.05, min_iv: 10_000 },
     },
-    unlock_tier: "mid",
+    unlock_tier: "established",
     created_at: new Date().toISOString(),
   },
   {
@@ -667,7 +1152,7 @@ export const SEED_NPCS: Npc[] = [
       services: ["Quick liquidation", "No-questions sales", "Cash advances"],
       consignment_terms: { commission_rate: 0.15, min_iv: 0 },
     },
-    unlock_tier: "whale",
+    unlock_tier: "connoisseur",
     created_at: new Date().toISOString(),
   },
 
@@ -690,7 +1175,7 @@ export const SEED_NPCS: Npc[] = [
         { title: "Hokusai's Wave: Surf or Substance?", date: "2026-02-01", body: "Revisiting the Great Wave in the age of digital reproduction. Has ubiquity destroyed its aura?" },
       ],
     },
-    unlock_tier: "beginner",
+    unlock_tier: "emerging",
     created_at: new Date().toISOString(),
   },
   {
@@ -712,7 +1197,7 @@ export const SEED_NPCS: Npc[] = [
         { title: "On Delacroix and Revolution", date: "2026-02-10", body: "Liberty Leading the People is political art at its most unapologetic. A defense of conviction in an ironic age." },
       ],
     },
-    unlock_tier: "mid",
+    unlock_tier: "established",
     created_at: new Date().toISOString(),
   },
   {
@@ -729,10 +1214,10 @@ export const SEED_NPCS: Npc[] = [
     stewardship_score: 50,
     npc_data: {
       posts: [
-        { title: "Print Culture in a Post-Digital World", date: "2026-02-12", body: "From Dürer's Melencolia I to NFT editions — how multiples continue to challenge our notion of originals." },
+        { title: "Scarcity in a Post-Digital World", date: "2026-02-12", body: "From Dürer's Melencolia I to algorithmic art — why the original object still commands reverence in an age of infinite copies." },
       ],
     },
-    unlock_tier: "beginner",
+    unlock_tier: "emerging",
     created_at: new Date().toISOString(),
   },
 ];
@@ -742,7 +1227,6 @@ export const SEED_NPCS: Npc[] = [
 // ============================================================
 const now = new Date();
 const inOneHour = new Date(now.getTime() + 60 * 60 * 1000);
-const inTwoHours = new Date(now.getTime() + 2 * 60 * 60 * 1000);
 const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 const tomorrowEnd = new Date(tomorrow.getTime() + 60 * 60 * 1000);
 
@@ -784,11 +1268,11 @@ export const SEED_MUSEUM_EXHIBITIONS: MuseumExhibition[] = [
 // OWNERSHIPS
 // ============================================================
 export const SEED_OWNERSHIPS: Ownership[] = [
-  // Stub user owns 4 artworks
-  { id: "own-001", artwork_id: "art-001", owner_id: STUB_USER_ID, acquired_at: new Date(Date.now() - 60 * 86400000).toISOString(), acquired_via: "auction", is_active: true, idle_weeks: 2, on_loan: false },
-  { id: "own-002", artwork_id: "art-004", owner_id: STUB_USER_ID, acquired_at: new Date(Date.now() - 45 * 86400000).toISOString(), acquired_via: "auction", is_active: true, idle_weeks: 0, on_loan: true },
-  { id: "own-003", artwork_id: "art-010", owner_id: STUB_USER_ID, acquired_at: new Date(Date.now() - 30 * 86400000).toISOString(), acquired_via: "purchase", is_active: true, idle_weeks: 4, on_loan: false },
-  { id: "own-004", artwork_id: "art-015", owner_id: STUB_USER_ID, acquired_at: new Date(Date.now() - 20 * 86400000).toISOString(), acquired_via: "purchase", is_active: true, idle_weeks: 1, on_loan: false },
+  // Demo collector (Eleanor Voss) owns 4 artworks
+  { id: "own-001", artwork_id: "art-001", owner_id: DEMO_COLLECTOR_ID, acquired_at: new Date(Date.now() - 60 * 86400000).toISOString(), acquired_via: "auction", is_active: true, idle_weeks: 2, on_loan: false },
+  { id: "own-002", artwork_id: "art-004", owner_id: DEMO_COLLECTOR_ID, acquired_at: new Date(Date.now() - 45 * 86400000).toISOString(), acquired_via: "auction", is_active: true, idle_weeks: 0, on_loan: true },
+  { id: "own-003", artwork_id: "art-010", owner_id: DEMO_COLLECTOR_ID, acquired_at: new Date(Date.now() - 30 * 86400000).toISOString(), acquired_via: "purchase", is_active: true, idle_weeks: 4, on_loan: false },
+  { id: "own-004", artwork_id: "art-015", owner_id: DEMO_COLLECTOR_ID, acquired_at: new Date(Date.now() - 20 * 86400000).toISOString(), acquired_via: "purchase", is_active: true, idle_weeks: 1, on_loan: false },
   // Dealers hold artworks (consignment / inventory) — available for sale or auction
   // Galleria North (primary dealer, fair prices)
   { id: "own-005", artwork_id: "art-006", owner_id: "npc-d01", acquired_at: new Date(Date.now() - 55 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 2, on_loan: false },
@@ -812,17 +1296,85 @@ export const SEED_OWNERSHIPS: Ownership[] = [
   // Night Market (grey market, risky)
   { id: "own-017", artwork_id: "art-009", owner_id: "npc-d06", acquired_at: new Date(Date.now() - 12 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
   { id: "own-018", artwork_id: "art-018", owner_id: "npc-d06", acquired_at: new Date(Date.now() - 8 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
+  // --- Drop 2 dealer inventory ---
+  // The Private Room (high-value broker)
+  { id: "own-021", artwork_id: "art-021", owner_id: "npc-d03", acquired_at: new Date(Date.now() - 70 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
+  { id: "own-022", artwork_id: "art-022", owner_id: "npc-d03", acquired_at: new Date(Date.now() - 65 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
+  // Galleria North (primary, fair prices)
+  { id: "own-023", artwork_id: "art-023", owner_id: "npc-d01", acquired_at: new Date(Date.now() - 50 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 1, on_loan: false },
+  { id: "own-024", artwork_id: "art-024", owner_id: "npc-d01", acquired_at: new Date(Date.now() - 45 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
+  { id: "own-027", artwork_id: "art-027", owner_id: "npc-d01", acquired_at: new Date(Date.now() - 38 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 2, on_loan: false },
+  // Bram & Co. (secondary market)
+  { id: "own-025", artwork_id: "art-025", owner_id: "npc-d02", acquired_at: new Date(Date.now() - 42 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
+  { id: "own-026", artwork_id: "art-026", owner_id: "npc-d02", acquired_at: new Date(Date.now() - 35 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 1, on_loan: false },
+  // Restoration House (specialist)
+  { id: "own-028", artwork_id: "art-028", owner_id: "npc-d04", acquired_at: new Date(Date.now() - 55 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 3, on_loan: false },
+  { id: "own-032", artwork_id: "art-032", owner_id: "npc-d04", acquired_at: new Date(Date.now() - 30 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
+  { id: "own-034", artwork_id: "art-034", owner_id: "npc-d04", acquired_at: new Date(Date.now() - 25 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
+  // Hearthstone Advisory (collection strategy)
+  { id: "own-029", artwork_id: "art-029", owner_id: "npc-d05", acquired_at: new Date(Date.now() - 40 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 2, on_loan: false },
+  { id: "own-030", artwork_id: "art-030", owner_id: "npc-d05", acquired_at: new Date(Date.now() - 33 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
+  { id: "own-033", artwork_id: "art-033", owner_id: "npc-d05", acquired_at: new Date(Date.now() - 20 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
+  // Night Market (grey market, risky)
+  { id: "own-031", artwork_id: "art-031", owner_id: "npc-d06", acquired_at: new Date(Date.now() - 15 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
+  { id: "own-038", artwork_id: "art-038", owner_id: "npc-d06", acquired_at: new Date(Date.now() - 10 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
+  // Remaining Tier D spread across dealers
+  { id: "own-035", artwork_id: "art-035", owner_id: "npc-d01", acquired_at: new Date(Date.now() - 22 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
+  { id: "own-036", artwork_id: "art-036", owner_id: "npc-d02", acquired_at: new Date(Date.now() - 18 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
+  { id: "own-037", artwork_id: "art-037", owner_id: "npc-d01", acquired_at: new Date(Date.now() - 14 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
+  { id: "own-039", artwork_id: "art-039", owner_id: "npc-d05", acquired_at: new Date(Date.now() - 12 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
+  { id: "own-040", artwork_id: "art-040", owner_id: "npc-d02", acquired_at: new Date(Date.now() - 8 * 86400000).toISOString(), acquired_via: "consignment", is_active: true, idle_weeks: 0, on_loan: false },
 ];
 
 // ============================================================
 // PROVENANCE EVENTS
 // ============================================================
 export const SEED_PROVENANCE_EVENTS: ProvenanceEvent[] = [
-  { id: "prov-001", artwork_id: "art-001", event_type: "purchase", from_owner: null, to_owner: STUB_USER_ID, price: 950_000, metadata: { source: "evening auction" }, created_at: new Date(Date.now() - 60 * 86400000).toISOString() },
-  { id: "prov-002", artwork_id: "art-004", event_type: "purchase", from_owner: null, to_owner: STUB_USER_ID, price: 185_000, metadata: { source: "regular auction" }, created_at: new Date(Date.now() - 45 * 86400000).toISOString() },
-  { id: "prov-003", artwork_id: "art-004", event_type: "loan", from_owner: STUB_USER_ID, to_owner: "npc-c01", price: null, metadata: { curator: "Mina Kline", exhibition: "Pixels & Paint" }, created_at: new Date(Date.now() - 10 * 86400000).toISOString() },
-  { id: "prov-004", artwork_id: "art-010", event_type: "purchase", from_owner: "npc-d02", to_owner: STUB_USER_ID, price: 78_000, metadata: { dealer: "Bram & Co." }, created_at: new Date(Date.now() - 30 * 86400000).toISOString() },
-  { id: "prov-005", artwork_id: "art-015", event_type: "purchase", from_owner: "npc-d01", to_owner: STUB_USER_ID, price: 7_500, metadata: { dealer: "Galleria North" }, created_at: new Date(Date.now() - 20 * 86400000).toISOString() },
+  // --- Demo collector acquisitions ---
+  { id: "prov-001", artwork_id: "art-001", event_type: "purchase", from_owner: null, to_owner: DEMO_COLLECTOR_ID, price: 950_000, metadata: { source: "evening auction" }, created_at: new Date(Date.now() - 60 * 86400000).toISOString() },
+  { id: "prov-002", artwork_id: "art-004", event_type: "purchase", from_owner: null, to_owner: DEMO_COLLECTOR_ID, price: 185_000, metadata: { source: "regular auction" }, created_at: new Date(Date.now() - 45 * 86400000).toISOString() },
+  { id: "prov-004", artwork_id: "art-010", event_type: "purchase", from_owner: "npc-d02", to_owner: DEMO_COLLECTOR_ID, price: 78_000, metadata: { dealer: "Bram & Co." }, created_at: new Date(Date.now() - 30 * 86400000).toISOString() },
+  { id: "prov-005", artwork_id: "art-015", event_type: "purchase", from_owner: "npc-d01", to_owner: DEMO_COLLECTOR_ID, price: 33_000, metadata: { dealer: "Galleria North" }, created_at: new Date(Date.now() - 20 * 86400000).toISOString() },
+  // --- Backstory acquisitions (how dealers acquired their current inventory) ---
+  { id: "prov-020", artwork_id: "art-002", event_type: "purchase", from_owner: null, to_owner: "npc-d03", price: 580_000, metadata: { source: "evening auction" }, created_at: new Date(Date.now() - 95 * 86400000).toISOString() },
+  { id: "prov-021", artwork_id: "art-003", event_type: "purchase", from_owner: null, to_owner: "npc-d03", price: 425_000, metadata: { source: "private sale" }, created_at: new Date(Date.now() - 90 * 86400000).toISOString() },
+  { id: "prov-022", artwork_id: "art-005", event_type: "purchase", from_owner: null, to_owner: "npc-d02", price: 240_000, metadata: { source: "estate sale" }, created_at: new Date(Date.now() - 55 * 86400000).toISOString() },
+  { id: "prov-023", artwork_id: "art-006", event_type: "purchase", from_owner: null, to_owner: "npc-d01", price: 172_000, metadata: { source: "regular auction" }, created_at: new Date(Date.now() - 70 * 86400000).toISOString() },
+  { id: "prov-024", artwork_id: "art-007", event_type: "purchase", from_owner: null, to_owner: "npc-d01", price: 310_000, metadata: { source: "evening auction" }, created_at: new Date(Date.now() - 65 * 86400000).toISOString() },
+  { id: "prov-025", artwork_id: "art-008", event_type: "purchase", from_owner: null, to_owner: "npc-d02", price: 145_000, metadata: { source: "private sale" }, created_at: new Date(Date.now() - 50 * 86400000).toISOString() },
+  { id: "prov-026", artwork_id: "art-009", event_type: "purchase", from_owner: null, to_owner: "npc-d06", price: 68_000, metadata: { source: "private sale" }, created_at: new Date(Date.now() - 18 * 86400000).toISOString() },
+  { id: "prov-027", artwork_id: "art-011", event_type: "purchase", from_owner: null, to_owner: "npc-d01", price: 52_000, metadata: { source: "regular auction" }, created_at: new Date(Date.now() - 48 * 86400000).toISOString() },
+  { id: "prov-028", artwork_id: "art-012", event_type: "purchase", from_owner: null, to_owner: "npc-d04", price: 58_000, metadata: { source: "estate sale" }, created_at: new Date(Date.now() - 42 * 86400000).toISOString() },
+  { id: "prov-029", artwork_id: "art-013", event_type: "purchase", from_owner: null, to_owner: "npc-d05", price: 41_000, metadata: { source: "regular auction" }, created_at: new Date(Date.now() - 45 * 86400000).toISOString() },
+  { id: "prov-030", artwork_id: "art-014", event_type: "purchase", from_owner: null, to_owner: "npc-d02", price: 47_500, metadata: { source: "private sale" }, created_at: new Date(Date.now() - 32 * 86400000).toISOString() },
+  { id: "prov-031", artwork_id: "art-016", event_type: "purchase", from_owner: null, to_owner: "npc-d01", price: 24_000, metadata: { source: "regular auction" }, created_at: new Date(Date.now() - 38 * 86400000).toISOString() },
+  { id: "prov-032", artwork_id: "art-017", event_type: "purchase", from_owner: null, to_owner: "npc-d04", price: 21_000, metadata: { source: "estate sale" }, created_at: new Date(Date.now() - 55 * 86400000).toISOString() },
+  { id: "prov-033", artwork_id: "art-018", event_type: "purchase", from_owner: null, to_owner: "npc-d06", price: 26_500, metadata: { source: "private sale" }, created_at: new Date(Date.now() - 15 * 86400000).toISOString() },
+  { id: "prov-034", artwork_id: "art-019", event_type: "purchase", from_owner: null, to_owner: "npc-d01", price: 13_500, metadata: { source: "regular auction" }, created_at: new Date(Date.now() - 28 * 86400000).toISOString() },
+  { id: "prov-035", artwork_id: "art-020", event_type: "purchase", from_owner: null, to_owner: "npc-d02", price: 17_000, metadata: { source: "private sale" }, created_at: new Date(Date.now() - 22 * 86400000).toISOString() },
+  // --- Drop 2 dealer acquisitions ---
+  { id: "prov-040", artwork_id: "art-021", event_type: "purchase", from_owner: null, to_owner: "npc-d03", price: 520_000, metadata: { source: "evening auction" }, created_at: new Date(Date.now() - 85 * 86400000).toISOString() },
+  { id: "prov-041", artwork_id: "art-022", event_type: "purchase", from_owner: null, to_owner: "npc-d03", price: 475_000, metadata: { source: "private sale" }, created_at: new Date(Date.now() - 80 * 86400000).toISOString() },
+  { id: "prov-042", artwork_id: "art-023", event_type: "purchase", from_owner: null, to_owner: "npc-d01", price: 265_000, metadata: { source: "regular auction" }, created_at: new Date(Date.now() - 65 * 86400000).toISOString() },
+  { id: "prov-043", artwork_id: "art-024", event_type: "purchase", from_owner: null, to_owner: "npc-d01", price: 300_000, metadata: { source: "evening auction" }, created_at: new Date(Date.now() - 60 * 86400000).toISOString() },
+  { id: "prov-044", artwork_id: "art-025", event_type: "purchase", from_owner: null, to_owner: "npc-d02", price: 188_000, metadata: { source: "estate sale" }, created_at: new Date(Date.now() - 55 * 86400000).toISOString() },
+  { id: "prov-045", artwork_id: "art-026", event_type: "purchase", from_owner: null, to_owner: "npc-d02", price: 245_000, metadata: { source: "regular auction" }, created_at: new Date(Date.now() - 48 * 86400000).toISOString() },
+  { id: "prov-046", artwork_id: "art-027", event_type: "purchase", from_owner: null, to_owner: "npc-d01", price: 225_000, metadata: { source: "private sale" }, created_at: new Date(Date.now() - 50 * 86400000).toISOString() },
+  { id: "prov-047", artwork_id: "art-028", event_type: "purchase", from_owner: null, to_owner: "npc-d04", price: 60_000, metadata: { source: "estate sale" }, created_at: new Date(Date.now() - 68 * 86400000).toISOString() },
+  { id: "prov-048", artwork_id: "art-029", event_type: "purchase", from_owner: null, to_owner: "npc-d05", price: 50_000, metadata: { source: "regular auction" }, created_at: new Date(Date.now() - 52 * 86400000).toISOString() },
+  { id: "prov-049", artwork_id: "art-030", event_type: "purchase", from_owner: null, to_owner: "npc-d05", price: 55_000, metadata: { source: "private sale" }, created_at: new Date(Date.now() - 45 * 86400000).toISOString() },
+  { id: "prov-050", artwork_id: "art-031", event_type: "purchase", from_owner: null, to_owner: "npc-d06", price: 62_000, metadata: { source: "private sale" }, created_at: new Date(Date.now() - 22 * 86400000).toISOString() },
+  { id: "prov-051", artwork_id: "art-032", event_type: "purchase", from_owner: null, to_owner: "npc-d04", price: 53_000, metadata: { source: "estate sale" }, created_at: new Date(Date.now() - 40 * 86400000).toISOString() },
+  { id: "prov-052", artwork_id: "art-033", event_type: "purchase", from_owner: null, to_owner: "npc-d05", price: 58_000, metadata: { source: "regular auction" }, created_at: new Date(Date.now() - 28 * 86400000).toISOString() },
+  { id: "prov-053", artwork_id: "art-034", event_type: "purchase", from_owner: null, to_owner: "npc-d04", price: 64_000, metadata: { source: "private sale" }, created_at: new Date(Date.now() - 35 * 86400000).toISOString() },
+  { id: "prov-054", artwork_id: "art-035", event_type: "purchase", from_owner: null, to_owner: "npc-d01", price: 20_000, metadata: { source: "regular auction" }, created_at: new Date(Date.now() - 30 * 86400000).toISOString() },
+  { id: "prov-055", artwork_id: "art-036", event_type: "purchase", from_owner: null, to_owner: "npc-d02", price: 25_000, metadata: { source: "estate sale" }, created_at: new Date(Date.now() - 25 * 86400000).toISOString() },
+  { id: "prov-056", artwork_id: "art-037", event_type: "purchase", from_owner: null, to_owner: "npc-d01", price: 22_000, metadata: { source: "regular auction" }, created_at: new Date(Date.now() - 20 * 86400000).toISOString() },
+  { id: "prov-057", artwork_id: "art-038", event_type: "purchase", from_owner: null, to_owner: "npc-d06", price: 27_000, metadata: { source: "private sale" }, created_at: new Date(Date.now() - 15 * 86400000).toISOString() },
+  { id: "prov-058", artwork_id: "art-039", event_type: "purchase", from_owner: null, to_owner: "npc-d05", price: 18_000, metadata: { source: "regular auction" }, created_at: new Date(Date.now() - 18 * 86400000).toISOString() },
+  { id: "prov-059", artwork_id: "art-040", event_type: "purchase", from_owner: null, to_owner: "npc-d02", price: 24_000, metadata: { source: "estate sale" }, created_at: new Date(Date.now() - 12 * 86400000).toISOString() },
+  // --- Activity events ---
+  { id: "prov-003", artwork_id: "art-004", event_type: "loan", from_owner: DEMO_COLLECTOR_ID, to_owner: "npc-c01", price: null, metadata: { curator: "Mina Kline", exhibition: "Pixels & Paint" }, created_at: new Date(Date.now() - 10 * 86400000).toISOString() },
   { id: "prov-006", artwork_id: "art-002", event_type: "exhibition", from_owner: "npc-c08", to_owner: null, price: null, metadata: { exhibition: "Masters in Dialogue", museum: "Vivienne Roche Gallery" }, created_at: new Date(Date.now() - 30 * 86400000).toISOString() },
   { id: "prov-007", artwork_id: "art-012", event_type: "loan", from_owner: "npc-c05", to_owner: "npc-c05", price: null, metadata: { exhibition: "Color Bomb!", curator: "Rafi Delgado" }, created_at: new Date(Date.now() - 15 * 86400000).toISOString() },
   { id: "prov-008", artwork_id: "art-005", event_type: "exhibition", from_owner: "npc-c12", to_owner: null, price: null, metadata: { exhibition: "The Overlooked", curator: "Marquis Sable" }, created_at: new Date(Date.now() - 5 * 86400000).toISOString() },

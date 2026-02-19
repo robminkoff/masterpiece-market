@@ -1,12 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import type { EnrichedArtwork, ProvenanceEvent, NpcRole } from "@/lib/types";
+import type { EnrichedArtwork, ProvenanceEvent, NpcRole, Ownership } from "@/lib/types";
 import { TIER_CONFIG, weeklyCarryCost } from "@/lib/types";
 import { STUB_USER_ID } from "@/lib/supabase";
 import { ArtFrame } from "@/components/ArtFrame";
+import { GalleryNotes } from "@/components/GalleryNotes";
+import { SellOptionsPanel } from "@/components/SellOptionsPanel";
+import { BuyFromDealerPanel } from "@/components/BuyFromDealerPanel";
 
 const ROLE_BADGE: Record<NpcRole, { label: string; className: string }> = {
   curator: { label: "Curator", className: "bg-purple-100 text-purple-700" },
@@ -18,7 +21,7 @@ function describeEvent(event: ProvenanceEvent): string {
   const meta = event.metadata as Record<string, string>;
   switch (event.event_type) {
     case "purchase":
-      return `Purchased${meta.source ? ` via ${meta.source}` : ""}${event.price ? ` for ${event.price.toLocaleString()} cr` : ""}`;
+      return `Purchased${meta.source ? ` via ${meta.source}` : ""}${meta.dealer ? ` via ${meta.dealer}` : ""}${event.price ? ` for ${event.price.toLocaleString()} cr` : ""}`;
     case "loan":
       return `Loaned to ${meta.curator ?? "a curator"}${meta.exhibition ? ` for "${meta.exhibition}"` : ""}`;
     case "exhibition":
@@ -30,7 +33,8 @@ function describeEvent(event: ProvenanceEvent): string {
 
 export default function ArtworkDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [artwork, setArtwork] = useState<EnrichedArtwork | null>(null);
+  const router = useRouter();
+  const [artwork, setArtwork] = useState<(EnrichedArtwork & { dealer_price?: number }) | null>(null);
   const [provenance, setProvenance] = useState<ProvenanceEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState(false);
@@ -46,7 +50,7 @@ export default function ArtworkDetailPage() {
     return () => document.removeEventListener("keydown", onKey);
   }, [lightbox, closeLightbox]);
 
-  useEffect(() => {
+  const fetchData = useCallback(() => {
     fetch(`/api/artworks?id=${id}`)
       .then((r) => r.json())
       .then((data) => {
@@ -55,6 +59,10 @@ export default function ArtworkDetailPage() {
       })
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   if (loading) return <p className="text-gray-500">Loading...</p>;
   if (!artwork) return <p className="text-red-500">Artwork not found.</p>;
@@ -65,6 +73,21 @@ export default function ArtworkDetailPage() {
   const owner = artwork.owner;
   const loan = artwork.loan;
   const isOwnedByUser = owner?.owner_id === STUB_USER_ID;
+  const isDealerOwned = owner?.role === "dealer";
+
+  // Derive ownership record for SellOptionsPanel from enriched API data
+  const ownership: Ownership | undefined = isOwnedByUser && owner
+    ? {
+        id: `own-derived`,
+        artwork_id: artwork.id,
+        owner_id: STUB_USER_ID,
+        acquired_at: owner.acquired_at,
+        acquired_via: "api",
+        is_active: true,
+        idle_weeks: 0,
+        on_loan: !!loan,
+      }
+    : undefined;
 
   // Find last purchase price from provenance
   const lastPurchase = provenance.find((e) => e.event_type === "purchase");
@@ -72,9 +95,12 @@ export default function ArtworkDetailPage() {
 
   return (
     <div>
-      <Link href="/catalog" className="text-sm text-gray-500 hover:text-gray-700 mb-4 inline-block">
-        ← Back to Catalog
-      </Link>
+      <button
+        onClick={() => router.back()}
+        className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mb-4 inline-block transition-colors"
+      >
+        ← Back
+      </button>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
         {/* Framed artwork — click to open lightbox */}
@@ -101,6 +127,8 @@ export default function ArtworkDetailPage() {
           {artwork.description && (
             <p className="mt-4 text-gray-600 dark:text-gray-300">{artwork.description}</p>
           )}
+
+          <GalleryNotes notes={artwork.gallery_notes} />
 
           {/* Ownership panel */}
           <div className="mt-6 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
@@ -130,26 +158,30 @@ export default function ArtworkDetailPage() {
                     <p>{lastSalePrice ? `${lastSalePrice.toLocaleString()} cr` : "—"}</p>
                   </div>
                 </div>
-                {/* Action stubs */}
-                <div className="flex gap-2 mt-2">
-                  <button
-                    disabled
-                    className="px-3 py-1.5 text-sm rounded border border-gray-300 dark:border-gray-700 text-gray-400 cursor-not-allowed"
-                  >
-                    Make Offer
-                  </button>
-                  <button
-                    disabled
-                    className="px-3 py-1.5 text-sm rounded border border-gray-300 dark:border-gray-700 text-gray-400 cursor-not-allowed"
-                  >
-                    Invite to Loan
-                  </button>
-                </div>
               </div>
             ) : (
               <p className="text-sm text-gray-400 italic">Unowned — available on the market</p>
             )}
           </div>
+
+          {/* SellOptionsPanel — shown for user-owned artworks */}
+          {isOwnedByUser && ownership && (
+            <div className="mt-6">
+              <SellOptionsPanel artwork={artwork} ownership={ownership} onSold={fetchData} />
+            </div>
+          )}
+
+          {/* BuyFromDealerPanel — shown for dealer-owned artworks */}
+          {isDealerOwned && artwork.dealer_price && owner && (
+            <div className="mt-6">
+              <BuyFromDealerPanel
+                artwork={artwork}
+                dealerPrice={artwork.dealer_price}
+                dealerName={owner.display_name}
+                onBought={fetchData}
+              />
+            </div>
+          )}
 
           {/* Current Location — shown when artwork is on loan */}
           {loan && (

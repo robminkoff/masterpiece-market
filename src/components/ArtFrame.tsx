@@ -58,7 +58,7 @@ export function ArtFrame({ src, alt, tier, size = "sm" }: ArtFrameProps) {
     return (
       <div className={`${style.frame} ${style.shadow} ${framePad} rounded-sm inline-block`}>
         <div className={`${style.mat} ${matPad}`}>
-          <div className={`bg-neutral-900 flex items-center justify-center ${size === "lg" ? "w-64 h-80" : "w-full aspect-[4/3]"}`}>
+          <div className={`bg-neutral-900 flex items-center justify-center ${size === "lg" ? "w-64 h-80" : "w-40 h-52"}`}>
             <div className="text-neutral-600 flex flex-col items-center gap-1">
               <span className={size === "lg" ? "text-5xl" : "text-2xl"} style={{ fontFamily: "serif" }}>MM</span>
               <span className="text-[10px] tracking-[0.2em] uppercase">No Image</span>

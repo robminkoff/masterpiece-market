@@ -13,12 +13,18 @@ export default function Home() {
         costs.
       </p>
 
-      <div className="flex gap-4">
+      <div className="flex gap-4 flex-wrap justify-center">
         <Link
           href="/auction-house"
           className="bg-[var(--accent-dark)] text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
         >
           Enter Auction House
+        </Link>
+        <Link
+          href="/marketplace"
+          className="bg-emerald-700 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
+        >
+          Browse Marketplace
         </Link>
         <Link
           href="/catalog"
@@ -28,7 +34,7 @@ export default function Home() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 max-w-3xl w-full text-left">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12 max-w-4xl w-full text-left">
         <FeatureCard
           title="Live Auctions"
           desc="Real-time bidding with countdown timers. Outbid rivals for masterpieces."
@@ -40,6 +46,10 @@ export default function Home() {
         <FeatureCard
           title="Curator Loans"
           desc="Loan works to NPC curators for income and reduced premiums."
+        />
+        <FeatureCard
+          title="Quick Sales"
+          desc="Sell instantly to a dealer at 50% IV, or send to auction and risk the market."
         />
       </div>
     </div>

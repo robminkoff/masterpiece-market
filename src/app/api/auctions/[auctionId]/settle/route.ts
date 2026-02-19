@@ -1,60 +1,89 @@
 import { NextRequest, NextResponse } from "next/server";
-import { BUYER_PREMIUM_RATE, SELLER_FEE_RATE } from "@/lib/types";
+import { SEED_NPCS, SEED_ARTWORKS } from "@/data/seed";
+import { auctions, auctionSubmissions, adjustCredits, persistState } from "@/data/store";
+import { BUYER_PREMIUM_RATE, SELLER_FEE_RATE, AUCTION_BACKSTOP_RATE } from "@/lib/types";
+import { executeSale } from "@/lib/sale";
+import { STUB_USER_ID } from "@/lib/supabase";
 
 // POST /api/auctions/:auctionId/settle — settle a completed auction
-// TODO: This is a stub. In production, settlement should be an atomic DB transaction.
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ auctionId: string }> },
 ) {
   const { auctionId } = await params;
 
-  // --- Settlement Transaction Steps (TODO: implement each) ---
-  //
-  // 1. VALIDATE: Auction status === 'ended' and has a winning bid
-  //    - If no bids or reserve not met → mark as 'cancelled', return artwork to seller
-  //
-  // 2. CALCULATE FEES:
-  //    - buyer_premium = sale_price × BUYER_PREMIUM_RATE (5%)
-  //    - seller_fee = sale_price × SELLER_FEE_RATE (2.5%)
-  //    - total_buyer_pays = sale_price + buyer_premium
-  //    - seller_receives = sale_price - seller_fee
-  //
-  // 3. DEBIT BUYER:
-  //    - Check buyer has enough credits
-  //    - Deduct total_buyer_pays from buyer's balance
-  //    - If insufficient credits → mark auction as 'failed', notify, re-list
-  //
-  // 4. CREDIT SELLER:
-  //    - Add seller_receives to seller's balance
-  //    - (For system/estate auctions, credits go to the market pool or original owner)
-  //
-  // 5. TRANSFER OWNERSHIP:
-  //    - Set current ownership is_active = false
-  //    - Create new ownership record for buyer (is_active = true, idle_weeks = 0)
-  //
-  // 6. RECORD PROVENANCE:
-  //    - Insert provenance_event with event_type = 'auction_sale'
-  //    - Include from_owner, to_owner, price, auction_id in metadata
-  //
-  // 7. CREATE SALE RECORD:
-  //    - Insert into sales table with all amounts
-  //
-  // 8. UPDATE AUCTION:
-  //    - Set status = 'settled', settled_at = now()
-  //
-  // 9. NOTIFY:
-  //    - TODO: Send notifications to buyer and seller
-  //    - TODO: Broadcast settlement via Socket.IO
+  const auction = auctions.find((a) => a.id === auctionId);
+  if (!auction) {
+    return NextResponse.json({ error: "Auction not found" }, { status: 404 });
+  }
 
-  const exampleSettlement = {
-    auction_id: auctionId,
-    status: "settled",
-    sale_price: 42_000,
-    buyer_premium: Math.round(42_000 * BUYER_PREMIUM_RATE),
-    seller_fee: Math.round(42_000 * SELLER_FEE_RATE),
-    message: "Settlement stub — see route source for transaction steps (TODO).",
-  };
+  if (auction.status !== "ended") {
+    return NextResponse.json({ error: `Auction is ${auction.status}, cannot settle` }, { status: 400 });
+  }
 
-  return NextResponse.json(exampleSettlement);
+  const artwork = SEED_ARTWORKS.find((a) => a.id === auction.artwork_id);
+  if (!artwork) {
+    return NextResponse.json({ error: "Artwork not found" }, { status: 500 });
+  }
+
+  const sellerId = auction.seller_id ?? "system";
+  let buyerId: string;
+  let salePrice: number;
+
+  if (auction.bid_count > 0 && auction.current_bidder) {
+    // Has bids — highest bidder wins
+    buyerId = auction.current_bidder;
+    salePrice = auction.current_bid;
+  } else {
+    // No bids — backstop: Galleria North buys at 30% IV
+    const backstopDealer = SEED_NPCS.find((n) => n.id === "npc-d01")!;
+    buyerId = backstopDealer.id;
+    salePrice = Math.round(artwork.insured_value * AUCTION_BACKSTOP_RATE);
+  }
+
+  const buyerPremium = Math.round(salePrice * BUYER_PREMIUM_RATE);
+  const sellerFee = Math.round(salePrice * SELLER_FEE_RATE);
+
+  const result = executeSale({
+    artworkId: auction.artwork_id,
+    buyerId,
+    sellerId,
+    salePrice,
+    commissionRate: SELLER_FEE_RATE,
+    dealerName: "Auction House",
+    via: "auction_settlement",
+  });
+
+  // Credit adjustments for stub user
+  if (buyerId === STUB_USER_ID) {
+    const totalCost = salePrice + buyerPremium;
+    adjustCredits(-totalCost, `Won auction for ${artwork.title}`);
+  }
+  if (sellerId === STUB_USER_ID) {
+    const netProceeds = salePrice - sellerFee;
+    adjustCredits(+netProceeds, `Auction sale of ${artwork.title}`);
+  }
+
+  // Update auction state
+  auction.status = "settled";
+  auction.settled_at = new Date().toISOString();
+
+  // Remove from auction submissions
+  const subIdx = auctionSubmissions.indexOf(auction.artwork_id);
+  if (subIdx >= 0) auctionSubmissions.splice(subIdx, 1);
+
+  persistState();
+
+  return NextResponse.json({
+    settlement: {
+      auction_id: auctionId,
+      status: "settled",
+      sale_price: salePrice,
+      buyer_id: buyerId,
+      buyer_premium: buyerPremium,
+      seller_fee: sellerFee,
+      net_proceeds: result.netProceeds,
+      backstop: auction.bid_count === 0,
+    },
+  });
 }

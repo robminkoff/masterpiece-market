@@ -1,4 +1,8 @@
-import type { Npc } from "@/lib/types";
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import type { Artwork, Npc } from "@/lib/types";
 
 export function NpcModules({ npc, activeTab }: { npc: Npc; activeTab: string }) {
   const data = npc.npc_data as Record<string, unknown>;
@@ -11,6 +15,7 @@ export function NpcModules({ npc, activeTab }: { npc: Npc; activeTab: string }) 
   if (npc.role === "dealer") {
     if (activeTab === "Services") return <DealerServices data={data} />;
     if (activeTab === "Consignment Terms") return <DealerConsignment data={data} />;
+    if (activeTab === "Inventory") return <DealerInventory dealerId={npc.id} />;
   }
 
   if (npc.role === "critic") {
@@ -114,6 +119,55 @@ function DealerConsignment({ data }: { data: Record<string, unknown> }) {
           </tr>
         </tbody>
       </table>
+    </div>
+  );
+}
+
+// --- Dealer inventory module ---
+
+interface InventoryItem {
+  artwork: Artwork;
+  dealer_name: string;
+  dealer_slug: string;
+  asking_price: number;
+}
+
+function DealerInventory({ dealerId }: { dealerId: string }) {
+  const [items, setItems] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`/api/dealer-inventory?dealer_id=${dealerId}`)
+      .then((r) => r.json())
+      .then((data) => setItems(data.inventory ?? []))
+      .finally(() => setLoading(false));
+  }, [dealerId]);
+
+  if (loading) return <p className="text-sm text-gray-400 py-4">Loading inventory...</p>;
+  if (items.length === 0) {
+    return <p className="text-sm text-gray-400 italic py-4">No inventory.</p>;
+  }
+
+  return (
+    <div className="space-y-3">
+      {items.map((item) => (
+        <div key={item.artwork.id} className="border border-gray-200 dark:border-gray-800 rounded-lg p-3">
+          <div className="flex items-center justify-between">
+            <Link
+              href={`/artworks/${item.artwork.id}`}
+              className="font-semibold text-sm hover:text-[var(--accent-dark)] transition-colors"
+            >
+              {item.artwork.title}
+            </Link>
+            <span className="text-sm font-bold text-[var(--accent-dark)]">
+              {item.asking_price.toLocaleString()} cr
+            </span>
+          </div>
+          <p className="text-xs text-gray-400 mt-1">
+            {item.artwork.artist} · Tier {item.artwork.tier}
+          </p>
+        </div>
+      ))}
     </div>
   );
 }

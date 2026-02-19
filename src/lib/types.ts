@@ -1,7 +1,7 @@
 // Masterpiece Market — Core Types
 
 export type ArtworkTier = "A" | "B" | "C" | "D";
-export type PlayerTier = "beginner" | "mid" | "whale";
+export type PlayerTier = "emerging" | "established" | "connoisseur" | "patron";
 export type AuctionType = "regular" | "evening" | "private" | "forced" | "estate";
 export type AuctionStatus = "scheduled" | "live" | "ended" | "settled" | "cancelled";
 export type NpcRole = "curator" | "dealer" | "critic";
@@ -17,7 +17,7 @@ export type LoanStatus = "pending" | "accepted" | "declined" | "expired";
 export const IV_TIER_THRESHOLDS: { min: number; tier: ArtworkTier }[] = [
   { min: 350_000, tier: "A" },
   { min: 75_000, tier: "B" },
-  { min: 10_000, tier: "C" },
+  { min: 50_000, tier: "C" },
   { min: 0, tier: "D" },
 ];
 
@@ -30,10 +30,10 @@ export function tierFromIV(iv: number): ArtworkTier {
 }
 
 export const TIER_CONFIG = {
-  A: { premiumRate: 0.006, storageFee: 200, label: "Iconic" },
-  B: { premiumRate: 0.0035, storageFee: 80, label: "Major" },
-  C: { premiumRate: 0.002, storageFee: 25, label: "Mid" },
-  D: { premiumRate: 0.0008, storageFee: 5, label: "Edition" },
+  A: { premiumRate: 0.025, storageFee: 1_000, label: "Iconic" },
+  B: { premiumRate: 0.015, storageFee: 400, label: "Major" },
+  C: { premiumRate: 0.008, storageFee: 100, label: "Mid" },
+  D: { premiumRate: 0.003, storageFee: 20, label: "Minor" },
 } as const;
 
 export const CURATOR_LOAN_FEES: Record<CuratorTier, number> = {
@@ -49,10 +49,11 @@ export const IDLE_WEEKS_THRESHOLD = 8;
 export const DELINQUENCY_GRACE_HOURS = 72;
 export const INACTIVITY_ESTATE_DAYS = 60;
 export const INACTIVITY_NOTICE_DAYS = 30;
-export const STARTING_CREDITS = 10_000;
+export const STARTING_CREDITS = 250_000;
 export const BUYER_PREMIUM_RATE = 0.05;
 export const SELLER_FEE_RATE = 0.025;
 export const BID_EXTENSION_SECONDS = 15;
+export const MIN_HOLD_HOURS = 0;
 
 // ---------- Entity interfaces ----------
 
@@ -72,6 +73,32 @@ export type ArtworkSource = "met" | "rijks" | "nga" | "iiif" | "wikimedia";
 export type ArtworkStatus = "active" | "needs_review" | "retired";
 export type Orientation = "portrait" | "landscape" | "square";
 
+/** A single section of gallery notes — styled like an interpretive placard in a museum. */
+export interface GalleryNoteSection {
+  heading: string;
+  body: string;
+}
+
+/**
+ * Gallery Notes — Drop-Minting Reference
+ *
+ * Every artwork should include a `gallery_notes` array with 2–3 sections.
+ * Each section has a `heading` (displayed in small-caps) and a `body`
+ * (2–3 sentences, museum-label register — concise, factual, no hype).
+ *
+ * Standard headings (pick 2–3 per artwork):
+ *   - "Historical Context"   — provenance, commission history, when/where created
+ *   - "Technique"            — materials, method, what makes the execution notable
+ *   - "Cultural Impact"      — influence on later art, popular culture, public consciousness
+ *   - "Market Significance"  — REQUIRED — explains the artwork's tier/IV in gameplay terms
+ *
+ * Example:
+ *   gallery_notes: [
+ *     { heading: "Historical Context", body: "Painted in Rome in 1505 for Cardinal X..." },
+ *     { heading: "Technique", body: "Employs cross-hatching on toned paper..." },
+ *     { heading: "Market Significance", body: "Tier B IV reflects strong academic demand..." },
+ *   ]
+ */
 export interface Artwork {
   id: string;
   title: string;
@@ -85,6 +112,7 @@ export interface Artwork {
   image_url_thumb: string | null;
   tags: string[];
   description: string | null;
+  gallery_notes: GalleryNoteSection[];
   native_width: number | null;
   native_height: number | null;
   dominant_orientation: Orientation | null;
@@ -198,7 +226,7 @@ export const MUSEUM_FOUNDING_REQUIREMENTS = {
   minTagDiversity: 5,
   minStewardship: 25,
   minPrestige: 50,
-  minWhaleWeeks: 8,
+  minPatronWeeks: 8,
   endowmentWeeks: 12,           // lock 12 weeks of carry costs
   minEndowmentReserveWeeks: 8,  // must always cover 8 weeks
   exhibitionCadenceWeeks: 8,    // 1 exhibition per this many weeks
@@ -302,4 +330,43 @@ export function museumEndowmentRequired(
     0,
   );
   return totalWeekly * MUSEUM_FOUNDING_REQUIREMENTS.endowmentWeeks;
+}
+
+// ---------- Dealer / sale helpers ----------
+
+/** Calculate dealer commission amount from sale price and rate. */
+export function dealerCommissionAmount(salePrice: number, commissionRate: number): number {
+  return Math.round(salePrice * commissionRate);
+}
+
+/** Calculate seller net proceeds after dealer commission. */
+export function sellerNetProceeds(salePrice: number, commissionRate: number): number {
+  return salePrice - dealerCommissionAmount(salePrice, commissionRate);
+}
+
+/** Check if an artwork can be resold (48h minimum hold after acquisition). */
+export function canResell(acquiredAt: string): boolean {
+  const holdMs = MIN_HOLD_HOURS * 60 * 60 * 1000;
+  return Date.now() - new Date(acquiredAt).getTime() >= holdMs;
+}
+
+// ---------- Sell / auction constants ----------
+
+export const DEALER_BUY_RATE = 0.50;
+export const AUCTION_BACKSTOP_RATE = 0.25;
+
+/** Markup multiplier per dealer NPC — determines asking price for dealer-owned artworks. */
+export const DEALER_MARKUP_RATES: Record<string, number> = {
+  "npc-d01": 1.10, // Galleria North
+  "npc-d02": 1.15, // Bram & Co.
+  "npc-d03": 1.25, // The Private Room
+  "npc-d04": 1.20, // Restoration House
+  "npc-d05": 1.12, // Hearthstone Advisory
+  "npc-d06": 1.30, // Night Market
+};
+
+/** Compute the asking price a dealer would list an artwork for. */
+export function dealerAskingPrice(iv: number, dealerId: string): number {
+  const markup = DEALER_MARKUP_RATES[dealerId] ?? 1.10;
+  return Math.round(iv * markup);
 }

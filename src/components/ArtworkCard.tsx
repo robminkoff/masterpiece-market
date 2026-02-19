@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { Artwork, EnrichedArtwork, NpcRole } from "@/lib/types";
-import { TIER_CONFIG, weeklyCarryCost } from "@/lib/types";
 import { ArtFrame } from "./ArtFrame";
 
 const ROLE_BADGE: Record<NpcRole, { label: string; className: string }> = {
@@ -23,8 +22,6 @@ function isEnriched(artwork: Artwork): artwork is EnrichedArtwork {
 }
 
 export function ArtworkCard({ artwork }: { artwork: Artwork }) {
-  const cost = weeklyCarryCost(artwork.insured_value, artwork.tier, false, 0);
-  const cfg = TIER_CONFIG[artwork.tier];
   const owner = isEnriched(artwork) ? artwork.owner : undefined;
   const loan = isEnriched(artwork) ? artwork.loan : undefined;
 
@@ -81,13 +78,6 @@ export function ArtworkCard({ artwork }: { artwork: Artwork }) {
         <p className="text-sm text-gray-500 dark:text-gray-400">
           {artwork.artist}, {artwork.year}
         </p>
-        {/* Tier + cost bar */}
-        <div className="mt-2 flex items-center justify-between rounded bg-gray-50 dark:bg-gray-900 px-2 py-1.5 text-xs">
-          <span className="font-bold">T{artwork.tier} <span className="font-normal text-gray-400">{cfg.label}</span></span>
-          <span className="text-gray-500 dark:text-gray-400">
-            <span className="text-gray-400">IV</span> {artwork.insured_value.toLocaleString()} · <span className="font-semibold text-gray-700 dark:text-gray-200">{cost.toLocaleString()} cr/wk</span>
-          </span>
-        </div>
       </div>
 
       {/* Secondary link to artwork detail (only shown when there's an owner) */}

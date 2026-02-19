@@ -1,15 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SEED_ARTWORKS, SEED_OWNERSHIPS, SEED_NPCS, SEED_PROVENANCE_EVENTS } from "@/data/seed";
-import { STUB_USER_ID, STUB_USER } from "@/lib/supabase";
+import { SEED_ARTWORKS, SEED_NPCS, DEMO_COLLECTOR_ID } from "@/data/seed";
+import { ownerships, provenanceEvents } from "@/data/store";
+import { STUB_USER_ID } from "@/lib/supabase";
+import { getPlayerProfile } from "@/data/store";
+import { dealerAskingPrice } from "@/lib/types";
 import type { ArtworkLoanInfo, ArtworkOwnerInfo, EnrichedArtwork } from "@/lib/types";
 
-function buildOwnerInfo(ownership: (typeof SEED_OWNERSHIPS)[number]): ArtworkOwnerInfo {
+function buildOwnerInfo(ownership: (typeof ownerships)[number]): ArtworkOwnerInfo {
   if (ownership.owner_id === STUB_USER_ID) {
+    const profile = getPlayerProfile();
     return {
       owner_id: STUB_USER_ID,
       owner_type: "user",
-      display_name: STUB_USER.display_name,
-      slug: STUB_USER.username,
+      display_name: profile?.display_name ?? "Player",
+      slug: profile?.username ?? "player",
+      acquired_at: ownership.acquired_at,
+    };
+  }
+
+  if (ownership.owner_id === DEMO_COLLECTOR_ID) {
+    return {
+      owner_id: DEMO_COLLECTOR_ID,
+      owner_type: "user",
+      display_name: "Eleanor Voss",
+      slug: "demo-collector",
       acquired_at: ownership.acquired_at,
     };
   }
@@ -37,16 +51,13 @@ function buildOwnerInfo(ownership: (typeof SEED_OWNERSHIPS)[number]): ArtworkOwn
 }
 
 function buildLoanInfo(artworkId: string): ArtworkLoanInfo | undefined {
-  // Find the most recent loan or exhibition event for this artwork
-  const loanEvent = SEED_PROVENANCE_EVENTS
+  const loanEvent = provenanceEvents
     .filter((e) => e.artwork_id === artworkId && (e.event_type === "loan" || e.event_type === "exhibition"))
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
 
   if (!loanEvent) return undefined;
 
   const meta = loanEvent.metadata as Record<string, string>;
-
-  // The borrower is to_owner for loans, from_owner for exhibitions (the exhibitor)
   const borrowerId = loanEvent.event_type === "loan" ? loanEvent.to_owner : loanEvent.from_owner;
   if (!borrowerId) return undefined;
 
@@ -61,16 +72,21 @@ function buildLoanInfo(artworkId: string): ArtworkLoanInfo | undefined {
   };
 }
 
-function enrichArtwork(artwork: (typeof SEED_ARTWORKS)[number]): EnrichedArtwork {
-  const ownership = SEED_OWNERSHIPS.find(
+function enrichArtwork(artwork: (typeof SEED_ARTWORKS)[number]): EnrichedArtwork & { dealer_price?: number } {
+  const ownership = ownerships.find(
     (o) => o.artwork_id === artwork.id && o.is_active,
   );
 
   const owner = ownership ? buildOwnerInfo(ownership) : undefined;
-  // Only build loan info if the artwork is actually on loan
   const loan = ownership?.on_loan ? buildLoanInfo(artwork.id) : undefined;
 
-  return { ...artwork, owner, loan };
+  // Add dealer price when owner is a dealer NPC
+  let dealer_price: number | undefined;
+  if (ownership && owner?.role === "dealer") {
+    dealer_price = dealerAskingPrice(artwork.insured_value, ownership.owner_id);
+  }
+
+  return { ...artwork, owner, loan, dealer_price };
 }
 
 // GET /api/artworks — list all artworks, or single artwork with ?id=
@@ -83,12 +99,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Artwork not found" }, { status: 404 });
     }
     const enriched = enrichArtwork(artwork);
-    const provenance = SEED_PROVENANCE_EVENTS
+    const provenance = provenanceEvents
       .filter((e) => e.artwork_id === id)
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
     return NextResponse.json({ artwork: enriched, provenance });
   }
 
-  const artworks: EnrichedArtwork[] = SEED_ARTWORKS.map(enrichArtwork);
+  const artworks = SEED_ARTWORKS.map(enrichArtwork);
   return NextResponse.json({ artworks });
 }

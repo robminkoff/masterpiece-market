@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ArtworkCard } from "@/components/ArtworkCard";
+import { useScrollRestore } from "@/lib/useScrollRestore";
 import type { EnrichedArtwork, ArtworkTier } from "@/lib/types";
 
 const TIERS: (ArtworkTier | "all")[] = ["all", "A", "B", "C", "D"];
@@ -10,12 +11,18 @@ export default function CatalogPage() {
   const [artworks, setArtworks] = useState<EnrichedArtwork[]>([]);
   const [filter, setFilter] = useState<ArtworkTier | "all">("all");
   const [loading, setLoading] = useState(true);
+  const { ready } = useScrollRestore();
 
   useEffect(() => {
     fetch("/api/artworks")
       .then((r) => r.json())
-      .then((data) => setArtworks(data.artworks))
-      .finally(() => setLoading(false));
+      .then((data) => {
+        setArtworks(data.artworks);
+        setLoading(false);
+        // Restore scroll after React renders the content
+        requestAnimationFrame(() => ready());
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filtered = filter === "all" ? artworks : artworks.filter((a) => a.tier === filter);

@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SEED_AUCTIONS } from "@/data/seed";
+import { auctions } from "@/data/store";
 import { CreateAuctionSchema } from "@/lib/validators";
 
-// In-memory auction store for v0
-const auctions = [...SEED_AUCTIONS];
+export const dynamic = "force-dynamic";
 
 // GET /api/auctions — list all auctions
 export async function GET() {
@@ -11,7 +10,6 @@ export async function GET() {
 }
 
 // POST /api/auctions — create a new auction (admin/dev only)
-// TODO: Add auth check — only admins can create auctions
 export async function POST(request: NextRequest) {
   const body = await request.json();
   const parsed = CreateAuctionSchema.safeParse(body);
@@ -22,7 +20,6 @@ export async function POST(request: NextRequest) {
 
   const input = parsed.data;
 
-  // Validate dates
   if (new Date(input.starts_at) >= new Date(input.ends_at)) {
     return NextResponse.json({ error: "starts_at must be before ends_at" }, { status: 400 });
   }

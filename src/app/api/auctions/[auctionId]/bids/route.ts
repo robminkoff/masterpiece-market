@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PlaceBidSchema } from "@/lib/validators";
-import { SEED_AUCTIONS } from "@/data/seed";
+import { auctions, canAfford } from "@/data/store";
 import { BID_EXTENSION_SECONDS } from "@/lib/types";
 
 // In-memory bid store for v0
 const bids: { auction_id: string; bidder_id: string; amount: number; created_at: string }[] = [];
-
-// Mutable copy of auctions for bid tracking
-const auctions = [...SEED_AUCTIONS];
 
 // POST /api/auctions/:auctionId/bids — place a bid
 export async function POST(
@@ -35,6 +32,11 @@ export async function POST(
     return NextResponse.json({ error: `Auction is ${auction.status}, not accepting bids` }, { status: 400 });
   }
 
+  // Validate bidder has enough credits
+  if (!canAfford(amount)) {
+    return NextResponse.json({ error: "Insufficient credits" }, { status: 400 });
+  }
+
   // Validate bid amount
   if (amount <= auction.current_bid) {
     return NextResponse.json(
@@ -42,10 +44,6 @@ export async function POST(
       { status: 400 },
     );
   }
-
-  // TODO: Validate bidder has enough credits
-  // TODO: Validate bidder is not delinquent
-  // TODO: Validate bidder tier has access to this auction type
 
   // Record bid
   const bid = {

@@ -23,8 +23,8 @@ export const STUB_USER: {
   id: STUB_USER_ID,
   username: "dev-player",
   display_name: "Dev Player",
-  tier: "beginner",
-  credits: 10_000,
+  tier: "emerging",
+  credits: 250_000,
   prestige: 0,
   stewardship: 0,
 };

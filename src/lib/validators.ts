@@ -27,6 +27,19 @@ export const ArtworkFilterSchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
 });
 
+export const SellToDealerSchema = z.object({
+  artwork_id: z.string(),
+  seller_id: z.string(),
+});
+
+export const SendToAuctionSchema = z.object({
+  artwork_id: z.string(),
+  seller_id: z.string(),
+  auction_type: AuctionTypeSchema.optional().default("regular"),
+});
+
 export type CreateAuctionInput = z.infer<typeof CreateAuctionSchema>;
 export type PlaceBidInput = z.infer<typeof PlaceBidSchema>;
 export type ArtworkFilter = z.infer<typeof ArtworkFilterSchema>;
+export type SellToDealerInput = z.infer<typeof SellToDealerSchema>;
+export type SendToAuctionInput = z.infer<typeof SendToAuctionSchema>;

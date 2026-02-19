@@ -2,7 +2,7 @@ import type { NpcRole } from "@/lib/types";
 
 const NPC_ROLE_TABS: Record<NpcRole, string[]> = {
   curator: ["Exhibitions", "Loan Terms"],
-  dealer: ["Services", "Consignment Terms"],
+  dealer: ["Services", "Consignment Terms", "Inventory"],
   critic: ["Reviews"],
 };
 
