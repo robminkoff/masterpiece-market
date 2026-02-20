@@ -9,7 +9,8 @@
     "lint": "eslint",
     "acquire": "tsx scripts/acquire/run.ts",
     "acquire:validate": "tsx scripts/acquire/run.ts validate",
-    "acquire:download": "tsx scripts/acquire/run.ts download"
+    "acquire:download": "tsx scripts/acquire/run.ts download",
+    "sim:mc": "tsx scripts/sim/montecarlo.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
