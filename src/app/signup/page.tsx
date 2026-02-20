@@ -75,8 +75,8 @@ export default function SignUpPage() {
         return;
       }
 
-      // 3. Redirect to dashboard
-      router.push("/dashboard");
+      // 3. Redirect to catalog
+      router.push("/catalog");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");

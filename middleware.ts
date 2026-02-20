@@ -58,10 +58,10 @@ export async function middleware(request: NextRequest) {
 
   const isPublic = PUBLIC_ROUTES.has(pathname);
 
-  // Authenticated users on signin/signup → redirect to dashboard
+  // Authenticated users on signin/signup → redirect to catalog
   if (user && (pathname === "/signin" || pathname === "/signup")) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = "/catalog";
     return NextResponse.redirect(url);
   }
 

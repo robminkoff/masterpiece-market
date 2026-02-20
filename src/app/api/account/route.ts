@@ -4,10 +4,10 @@ import {
   getProfile,
   updateProfile,
   getOwnershipsByOwner,
-  getDealerDTierArtworks,
-  executeSaleDb,
+  generatePackageArtwork,
   adjustCredits,
 } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export const dynamic = "force-dynamic";
 
@@ -65,27 +65,28 @@ export async function POST(req: Request) {
     display_name: display_name.trim(),
   });
 
-  // Gift a random D-tier artwork on first profile setup (idempotent)
+  // Gift a generated D-tier artwork on first profile setup (idempotent)
   let giftedArtworkId: string | null = null;
   try {
     const existing = await getOwnershipsByOwner(userId);
     if (existing.length === 0) {
-      const available = await getDealerDTierArtworks();
-      if (available.length > 0) {
-        const pick = available[Math.floor(Math.random() * available.length)];
-        await executeSaleDb({
-          artworkId: pick.artwork.id,
-          buyerId: userId,
-          sellerId: pick.ownership.owner_id,
-          salePrice: 0,
-          via: "signup_gift",
-        });
-        await adjustCredits(userId, 0, `Signup gift: ${pick.artwork.title}`);
-        giftedArtworkId = pick.artwork.id;
-      }
+      const artwork = await generatePackageArtwork("D");
+      const ownId = `own-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const { error: ownErr } = await supabaseAdmin.from("ownerships").insert({
+        id: ownId,
+        artwork_id: artwork.id,
+        owner_id: userId,
+        acquired_via: "signup_gift",
+        is_active: true,
+        idle_weeks: 0,
+        on_loan: false,
+      });
+      if (ownErr) throw ownErr;
+      await adjustCredits(userId, 0, `Signup gift: ${artwork.title}`);
+      giftedArtworkId = artwork.id;
     }
-  } catch {
-    // Non-fatal — don't block account creation if gift fails
+  } catch (err) {
+    console.error("Signup gift failed:", err);
   }
 
   return NextResponse.json({ profile, gifted_artwork_id: giftedArtworkId });
