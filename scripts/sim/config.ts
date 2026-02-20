@@ -80,6 +80,22 @@ export interface FeeConfig {
   backstopRate: number;    // 0.25 = 25% of IV
 }
 
+export interface StartingArtworkConfig {
+  enabled: boolean;
+  tier: Tier;
+}
+
+export interface SurprisePackageConfig {
+  enabled: boolean;
+  packages: PackageDef[];
+}
+
+export interface PackageDef {
+  name: string;
+  cost: number;
+  tierWeights: { tier: Tier; weight: number }[];
+}
+
 // ── Top-level simulation config ─────────────────────────────────────
 
 export interface SimConfig {
@@ -93,6 +109,8 @@ export interface SimConfig {
   strategy: StrategyConfig;
   museum: MuseumConfig;
   fees: FeeConfig;
+  startingArtwork: StartingArtworkConfig;
+  surprisePackages: SurprisePackageConfig;
   idleSurchargeWeeks: number;
   idleSurchargeMultiplier: number;
 }
@@ -153,6 +171,47 @@ export const DEFAULT_FEES: FeeConfig = {
   backstopRate: 0.25,
 };
 
+export const DEFAULT_STARTING_ARTWORK: StartingArtworkConfig = {
+  enabled: false,
+  tier: "D",
+};
+
+export const DEFAULT_SURPRISE_PACKAGES: SurprisePackageConfig = {
+  enabled: false,
+  packages: [
+    {
+      name: "Bronze",
+      cost: 25_000,
+      tierWeights: [
+        { tier: "D", weight: 80 },
+        { tier: "C", weight: 15 },
+        { tier: "B", weight: 4 },
+        { tier: "A", weight: 1 },
+      ],
+    },
+    {
+      name: "Silver",
+      cost: 75_000,
+      tierWeights: [
+        { tier: "D", weight: 30 },
+        { tier: "C", weight: 40 },
+        { tier: "B", weight: 25 },
+        { tier: "A", weight: 5 },
+      ],
+    },
+    {
+      name: "Gold",
+      cost: 200_000,
+      tierWeights: [
+        { tier: "D", weight: 5 },
+        { tier: "C", weight: 15 },
+        { tier: "B", weight: 40 },
+        { tier: "A", weight: 40 },
+      ],
+    },
+  ],
+};
+
 // ── Market presets ──────────────────────────────────────────────────
 
 export const MARKET_PRESETS: Record<string, MarketConfig> = {
@@ -183,6 +242,119 @@ export const TOPUP_PRESETS: Record<string, TopUpConfig> = {
   },
 };
 
+// ── Tune presets (parameter variants for A/B comparison) ─────────────
+
+export interface TunePreset {
+  name: string;
+  startingCredits?: number;
+  tierOverrides?: Partial<Record<Tier, Partial<TierConfig>>>;
+  loanOverrides?: Partial<LoanConfig>;
+  startingArtwork?: Partial<StartingArtworkConfig>;
+  surprisePackages?: Partial<SurprisePackageConfig>;
+}
+
+export const TUNE_PRESETS: Record<string, TunePreset> = {
+  current: {
+    name: "Current",
+  },
+  gpt: {
+    name: "GPT v0",
+    tierOverrides: { A: { premiumRate: 0.015 } },
+    loanOverrides: {
+      curatorTiers: [
+        { name: "assistant",  weight: 50, feeRate: 0.005  },
+        { name: "curator",    weight: 35, feeRate: 0.01   },
+        { name: "chief",      weight: 13, feeRate: 0.016  },
+        { name: "legendary",  weight:  2, feeRate: 0.025  },
+      ],
+    },
+  },
+  "gpt-lowfee": {
+    name: "GPT lowfee",
+    tierOverrides: { A: { premiumRate: 0.015 } },
+  },
+  "loans2x": {
+    name: "2x Loans",
+    tierOverrides: {
+      A: { loanOfferProb: 0.24 },
+      B: { loanOfferProb: 0.20 },
+      C: { loanOfferProb: 0.14 },
+      D: { loanOfferProb: 0.10 },
+    },
+  },
+  combo: {
+    name: "Combo",
+    tierOverrides: {
+      A: { premiumRate: 0.015, loanOfferProb: 0.24 },
+      B: { loanOfferProb: 0.20 },
+      C: { loanOfferProb: 0.14 },
+      D: { loanOfferProb: 0.10 },
+    },
+  },
+  "start500k": {
+    name: "500k Start",
+    startingCredits: 500_000,
+  },
+  "500k-gpt": {
+    name: "500k+GPT",
+    startingCredits: 500_000,
+    tierOverrides: { A: { premiumRate: 0.015 } },
+  },
+  "500k-art-pkg": {
+    name: "500k+Art+Pkg",
+    startingCredits: 500_000,
+    startingArtwork: { enabled: true },
+    surprisePackages: { enabled: true },
+  },
+  "500k-full": {
+    name: "500k Full",
+    startingCredits: 500_000,
+    tierOverrides: { A: { premiumRate: 0.015 } },
+    startingArtwork: { enabled: true },
+    surprisePackages: { enabled: true },
+  },
+  "start1m": {
+    name: "1M Start",
+    startingCredits: 1_000_000,
+  },
+  "start1m-gpt": {
+    name: "1M+GPT",
+    startingCredits: 1_000_000,
+    tierOverrides: { A: { premiumRate: 0.015 } },
+  },
+  "start-art": {
+    name: "Start w/Art",
+    startingArtwork: { enabled: true },
+  },
+  pkg: {
+    name: "Packages",
+    surprisePackages: { enabled: true },
+  },
+  "1m-art": {
+    name: "1M+Art",
+    startingCredits: 1_000_000,
+    startingArtwork: { enabled: true },
+  },
+  "1m-pkg": {
+    name: "1M+Pkg",
+    startingCredits: 1_000_000,
+    surprisePackages: { enabled: true },
+  },
+  "1m-art-pkg": {
+    name: "1M+Art+Pkg",
+    startingCredits: 1_000_000,
+    startingArtwork: { enabled: true },
+    surprisePackages: { enabled: true },
+  },
+  "full": {
+    name: "Full (1M+GPT+A+P)",
+    startingCredits: 1_000_000,
+    tierOverrides: { A: { premiumRate: 0.015 } },
+    startingArtwork: { enabled: true },
+    surprisePackages: { enabled: true },
+  },
+};
+
 // ── Build a single config from presets ───────────────────────────────
 
 export function buildConfig(
@@ -203,22 +375,12 @@ export function buildConfig(
     strategy: { ...DEFAULT_STRATEGY },
     museum: { ...DEFAULT_MUSEUM },
     fees: { ...DEFAULT_FEES },
+    startingArtwork: { ...DEFAULT_STARTING_ARTWORK },
+    surprisePackages: { ...DEFAULT_SURPRISE_PACKAGES },
     idleSurchargeWeeks: 8,
     idleSurchargeMultiplier: 1.2,
     ...overrides,
   };
-}
-
-// ── Build the default 9-scenario matrix ─────────────────────────────
-
-export function buildDefaultScenarios(): SimConfig[] {
-  const scenarios: SimConfig[] = [];
-  for (const m of ["hot", "normal", "cold"]) {
-    for (const t of ["none", "emergency", "aggressive"]) {
-      scenarios.push(buildConfig(m, t));
-    }
-  }
-  return scenarios;
 }
 
 // ── CLI argument parsing ────────────────────────────────────────────
@@ -231,6 +393,10 @@ export interface CLIArgs {
   topup: string | null;    // null = run all
   loans: boolean;
   flipping: boolean;
+  tune: string;            // tune preset key (default: "current")
+  compare: boolean;        // run all tune presets side-by-side
+  startart: boolean;       // override: give player a starting D-tier artwork
+  packages: boolean;       // override: enable surprise packages
 }
 
 export function parseArgs(argv: string[] = process.argv.slice(2)): CLIArgs {
@@ -242,6 +408,10 @@ export function parseArgs(argv: string[] = process.argv.slice(2)): CLIArgs {
     topup: null,
     loans: true,
     flipping: false,
+    tune: "current",
+    compare: false,
+    startart: false,
+    packages: false,
   };
 
   for (const arg of argv) {
@@ -254,28 +424,89 @@ export function parseArgs(argv: string[] = process.argv.slice(2)): CLIArgs {
       case "topup":    args.topup = val; break;
       case "loans":    args.loans = val !== "false" && val !== "0"; break;
       case "flipping": args.flipping = val !== "false" && val !== "0"; break;
+      case "tune":     args.tune = val; break;
+      case "compare":  args.compare = val !== "false" && val !== "0"; break;
+      case "startart": args.startart = val !== "false" && val !== "0"; break;
+      case "packages": args.packages = val !== "false" && val !== "0"; break;
     }
   }
 
   return args;
 }
 
-/** Build scenario list honoring CLI filters. */
+/** Build scenario list honoring CLI filters and tune presets. */
 export function buildScenarios(args: CLIArgs): SimConfig[] {
   const markets = args.market ? [args.market] : ["hot", "normal", "cold"];
   const topups = args.topup ? [args.topup] : ["none", "emergency", "aggressive"];
+  const tuneKeys = args.compare
+    ? Object.keys(TUNE_PRESETS)
+    : [args.tune];
 
   const scenarios: SimConfig[] = [];
-  for (const m of markets) {
-    for (const t of topups) {
-      scenarios.push(
-        buildConfig(m, t, {
+
+  for (const tuneKey of tuneKeys) {
+    const tune = TUNE_PRESETS[tuneKey] ?? TUNE_PRESETS.current;
+
+    // Build tiers with tune overrides
+    const tiers: Record<Tier, TierConfig> = {
+      A: { ...DEFAULT_TIERS.A },
+      B: { ...DEFAULT_TIERS.B },
+      C: { ...DEFAULT_TIERS.C },
+      D: { ...DEFAULT_TIERS.D },
+    };
+    for (const t of TIERS) {
+      if (tune.tierOverrides?.[t]) {
+        tiers[t] = { ...tiers[t], ...tune.tierOverrides[t] };
+      }
+    }
+
+    // Build loan config with tune overrides
+    const loans: LoanConfig = {
+      ...DEFAULT_LOANS,
+      ...(tune.loanOverrides ?? {}),
+      enabled: args.loans,
+    };
+
+    // Starting artwork: tune preset or CLI flag
+    const startingArtwork: StartingArtworkConfig = {
+      ...DEFAULT_STARTING_ARTWORK,
+      ...(tune.startingArtwork ?? {}),
+      ...(args.startart ? { enabled: true } : {}),
+    };
+
+    // Surprise packages: tune preset or CLI flag
+    const surprisePackages: SurprisePackageConfig = {
+      ...DEFAULT_SURPRISE_PACKAGES,
+      ...(tune.surprisePackages ?? {}),
+      ...(args.packages ? { enabled: true } : {}),
+    };
+
+    const prefix = tuneKeys.length > 1 ? `${tune.name} | ` : "";
+
+    for (const m of markets) {
+      for (const t of topups) {
+        const market = MARKET_PRESETS[m] ?? MARKET_PRESETS.normal;
+        const topUp = TOPUP_PRESETS[t] ?? TOPUP_PRESETS.none;
+
+        scenarios.push({
+          name: `${prefix}${market.name} / ${topUp.name}`,
+          startingCredits: tune.startingCredits ?? 250_000,
           maxWeeks: args.maxWeeks,
-          loans: { ...DEFAULT_LOANS, enabled: args.loans },
+          tiers,
+          market,
+          topUp,
+          loans,
           strategy: { ...DEFAULT_STRATEGY, flippingEnabled: args.flipping },
-        }),
-      );
+          museum: { ...DEFAULT_MUSEUM },
+          fees: { ...DEFAULT_FEES },
+          startingArtwork,
+          surprisePackages,
+          idleSurchargeWeeks: 8,
+          idleSurchargeMultiplier: 1.2,
+        });
+      }
     }
   }
+
   return scenarios;
 }

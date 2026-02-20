@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { getAuthUserId } from "@/lib/auth";
-import { getProfile, updateProfile } from "@/lib/db";
+import {
+  getProfile,
+  updateProfile,
+  getOwnershipsByOwner,
+  getDealerDTierArtworks,
+  executeSaleDb,
+  adjustCredits,
+} from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -57,5 +64,29 @@ export async function POST(req: Request) {
     username,
     display_name: display_name.trim(),
   });
-  return NextResponse.json({ profile });
+
+  // Gift a random D-tier artwork on first profile setup (idempotent)
+  let giftedArtworkId: string | null = null;
+  try {
+    const existing = await getOwnershipsByOwner(userId);
+    if (existing.length === 0) {
+      const available = await getDealerDTierArtworks();
+      if (available.length > 0) {
+        const pick = available[Math.floor(Math.random() * available.length)];
+        await executeSaleDb({
+          artworkId: pick.artwork.id,
+          buyerId: userId,
+          sellerId: pick.ownership.owner_id,
+          salePrice: 0,
+          via: "signup_gift",
+        });
+        await adjustCredits(userId, 0, `Signup gift: ${pick.artwork.title}`);
+        giftedArtworkId = pick.artwork.id;
+      }
+    }
+  } catch {
+    // Non-fatal — don't block account creation if gift fails
+  }
+
+  return NextResponse.json({ profile, gifted_artwork_id: giftedArtworkId });
 }

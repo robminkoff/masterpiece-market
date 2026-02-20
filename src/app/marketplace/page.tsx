@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Artwork, ArtworkTier, Auction } from "@/lib/types";
 import { ArtFrame } from "@/components/ArtFrame";
+import { SurprisePackagePanel } from "@/components/SurprisePackagePanel";
 import { useScrollRestore } from "@/lib/useScrollRestore";
 
 const TIERS: (ArtworkTier | "all")[] = ["all", "A", "B", "C", "D"];
@@ -68,6 +69,14 @@ export default function MarketplacePage() {
           </button>
         ))}
       </div>
+
+      {/* Surprise Packages */}
+      <div className="mb-10">
+        <SurprisePackagePanel />
+      </div>
+
+      {/* Dealer Inventory */}
+      <h2 className="text-xl font-semibold mb-4">Dealer Inventory</h2>
 
       {loading ? (
         <p className="text-gray-500">Loading inventory...</p>

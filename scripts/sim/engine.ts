@@ -14,6 +14,7 @@ import {
   TIERS_CHEAPEST_FIRST,
   TAG_POOL,
   TierConfig,
+  PackageDef,
 } from "./config";
 
 // ── Types ───────────────────────────────────────────────────────────
@@ -173,6 +174,24 @@ export function simulateRun(cfg: SimConfig, rng: PRNG): SimResult {
     topUpSpent: 0,
   };
 
+  // ── Starting artwork (gifted at week 0) ──────────────────────────
+  if (cfg.startingArtwork.enabled) {
+    const tier = cfg.startingArtwork.tier;
+    const tc = cfg.tiers[tier];
+    const iv = rng.uniformInt(tc.minIV, tc.maxIV);
+    const tags = rng.pick(TAG_POOL, rng.uniformInt(1, 2));
+    state.artworks.push({
+      iv,
+      tier,
+      tags,
+      idleWeeks: 0,
+      onLoan: false,
+      loanWeeksRemaining: 0,
+      acquiredWeek: 0,
+      purchaseCost: 0,
+    });
+  }
+
   for (let week = 1; week <= cfg.maxWeeks; week++) {
     state.week = week;
 
@@ -223,7 +242,12 @@ export function simulateRun(cfg: SimConfig, rng: PRNG): SimResult {
     // ── 9. Acquire new works to fill museum requirements ─────────
     acquireWorks(state, cfg, rng);
 
-    // ── 10. Flip for profit (optional) ───────────────────────────
+    // ── 10. Buy surprise packages if enabled ────────────────────
+    if (cfg.surprisePackages.enabled) {
+      buySurprisePackage(state, cfg, rng);
+    }
+
+    // ── 11. Flip for profit (optional) ───────────────────────────
     if (cfg.strategy.flippingEnabled) {
       tryFlips(state, cfg, rng);
     }
@@ -406,6 +430,63 @@ function tryFlips(state: PlayerState, cfg: SimConfig, rng: PRNG): void {
     state.cash += proceeds;
     state.artworks = state.artworks.filter((a) => a !== w);
   }
+}
+
+// ── Surprise packages ───────────────────────────────────────────────
+
+function buySurprisePackage(state: PlayerState, cfg: SimConfig, rng: PRNG): void {
+  const pkgs = cfg.surprisePackages.packages;
+  if (pkgs.length === 0) return;
+
+  const needed = tierNeeded(state.artworks, cfg);
+  const totalNeeded = needed.A + needed.B + needed.C + needed.D;
+  if (totalNeeded <= 0) return;
+
+  // Pick the package with the best chance-per-credit for the highest needed tier.
+  // Need A? Gold has 40% A chance for 200k. Need only D? Bronze has 80% for 25k.
+  const highestNeeded: Tier =
+    needed.A > 0 ? "A" : needed.B > 0 ? "B" : needed.C > 0 ? "C" : "D";
+
+  const scored = pkgs
+    .filter((p) => p.cost <= state.cash)
+    .map((p) => {
+      const w = p.tierWeights.find((tw) => tw.tier === highestNeeded)?.weight ?? 0;
+      return { pkg: p, score: w / p.cost };
+    })
+    .filter((s) => s.score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  if (scored.length === 0) return;
+
+  const { pkg } = scored[0];
+
+  // Runway check (include estimated carry of the new artwork)
+  const currentCarry = totalWeeklyCarry(state, cfg);
+  const postRunway =
+    currentCarry > 0 ? (state.cash - pkg.cost) / currentCarry : Infinity;
+  if (postRunway < cfg.strategy.safetyBufferWeeks) return;
+
+  // Buy and open the package
+  state.cash -= pkg.cost;
+
+  const tiers = pkg.tierWeights.map((tw) => tw.tier);
+  const weights = pkg.tierWeights.map((tw) => tw.weight);
+  const resultTier = rng.weightedChoice(tiers, weights) as Tier;
+
+  const tc = cfg.tiers[resultTier];
+  const iv = rng.uniformInt(tc.minIV, tc.maxIV);
+  const tags = rng.pick(TAG_POOL, rng.uniformInt(1, 2));
+
+  state.artworks.push({
+    iv,
+    tier: resultTier,
+    tags,
+    idleWeeks: 0,
+    onLoan: false,
+    loanWeeksRemaining: 0,
+    acquiredWeek: state.week,
+    purchaseCost: pkg.cost,
+  });
 }
 
 // ── Result builder ──────────────────────────────────────────────────

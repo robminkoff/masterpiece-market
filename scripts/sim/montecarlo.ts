@@ -11,6 +11,8 @@
  *   npx tsx scripts/sim/montecarlo.ts --runs=10000 --seed=123
  *   npx tsx scripts/sim/montecarlo.ts --market=cold --topup=none
  *   npx tsx scripts/sim/montecarlo.ts --loans=false --flipping=true
+ *   npx tsx scripts/sim/montecarlo.ts --tune=gpt-lowfee
+ *   npx tsx scripts/sim/montecarlo.ts --compare --market=normal
  *
  * npm script:
  *   npm run sim:mc
@@ -18,7 +20,7 @@
  */
 
 import { PRNG } from "./prng";
-import { parseArgs, buildScenarios, SimConfig } from "./config";
+import { parseArgs, buildScenarios, SimConfig, TUNE_PRESETS } from "./config";
 import { simulateRun, SimResult } from "./engine";
 
 // ── Statistics helpers ──────────────────────────────────────────────
@@ -111,20 +113,26 @@ function runScenario(
 
 // ── Output formatting ───────────────────────────────────────────────
 
-function printHeader(runs: number, maxWeeks: number, seed: number): void {
+function printHeader(runs: number, maxWeeks: number, seed: number, tuneInfo?: string): void {
   console.log();
   console.log("  Masterpiece Market — Monte Carlo Simulation");
   console.log("  " + "═".repeat(60));
   console.log(
     `  Runs: ${runs.toLocaleString()}  |  Max weeks: ${maxWeeks}  |  Seed: ${seed}`,
   );
+  if (tuneInfo) {
+    console.log(`  ${tuneInfo}`);
+  }
   console.log();
 }
 
 function printTable(scenarios: ScenarioStats[]): void {
+  // Dynamic name column width
+  const nameWidth = Math.max(22, ...scenarios.map((s) => s.name.length + 1));
+
   // Column headers
   const header = [
-    "Scenario".padEnd(22),
+    "Scenario".padEnd(nameWidth),
     "Museum%".padStart(8),
     "P10".padStart(5),
     "P50".padStart(5),
@@ -148,7 +156,7 @@ function printTable(scenarios: ScenarioStats[]): void {
     const nw = s.nw52.length > 0 ? fmtK(median(s.nw52)) : "—";
 
     const row = [
-      s.name.padEnd(22),
+      s.name.padEnd(nameWidth),
       museumPct.padStart(8),
       mP10.padStart(5),
       mP50.padStart(5),
@@ -180,8 +188,19 @@ function main(): void {
   const args = parseArgs();
   const scenarios = buildScenarios(args);
 
-  printHeader(args.runs, args.maxWeeks, args.seed);
+  // Build tune info string for header
+  let tuneInfo: string | undefined;
+  if (args.compare) {
+    const names = Object.values(TUNE_PRESETS).map((t) => t.name);
+    tuneInfo = `Comparing: ${names.join(", ")}`;
+  } else if (args.tune !== "current") {
+    const tune = TUNE_PRESETS[args.tune];
+    tuneInfo = tune ? `Tune: ${tune.name}` : `Tune: ${args.tune}`;
+  }
 
+  printHeader(args.runs, args.maxWeeks, args.seed, tuneInfo);
+
+  const nameWidth = Math.max(22, ...scenarios.map((s) => s.name.length + 1));
   const allStats: ScenarioStats[] = [];
 
   for (const cfg of scenarios) {
@@ -190,7 +209,7 @@ function main(): void {
     const elapsed = Date.now() - t0;
     const runsPerSec = Math.round(args.runs / (elapsed / 1000));
     process.stderr.write(
-      `  ✓ ${cfg.name.padEnd(22)} ${elapsed}ms (${runsPerSec.toLocaleString()} runs/s)\n`,
+      `  ✓ ${cfg.name.padEnd(nameWidth)} ${elapsed}ms (${runsPerSec.toLocaleString()} runs/s)\n`,
     );
     allStats.push(stats);
   }

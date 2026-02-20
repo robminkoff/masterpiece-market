@@ -8,10 +8,16 @@ import type {
   ArtworkTier,
   Npc,
   Ownership,
+  PackageKey,
   Profile,
   ProvenanceEvent,
 } from "@/lib/types";
-import { weeklyCarryCost, STARTING_CREDITS } from "@/lib/types";
+import {
+  weeklyCarryCost,
+  STARTING_CREDITS,
+  IV_TIER_THRESHOLDS,
+  SURPRISE_PACKAGES,
+} from "@/lib/types";
 
 const db = supabaseAdmin;
 
@@ -300,6 +306,152 @@ export async function applyBurnTick(
   await db.from("profiles").update({ last_burn_at: newBurnAt }).eq("id", userId);
 
   return { weeksElapsed, totalBurned };
+}
+
+// ──────────────────────────────────────────────
+// Dealer D-Tier Artworks (signup gift)
+// ──────────────────────────────────────────────
+
+export async function getDealerDTierArtworks(): Promise<
+  { artwork: Artwork; ownership: Ownership }[]
+> {
+  // Get all active ownerships by dealer NPCs
+  const { data: ownerships, error: ownErr } = await db
+    .from("ownerships")
+    .select("*")
+    .like("owner_id", "npc-d%")
+    .eq("is_active", true);
+  if (ownErr) throw ownErr;
+  if (!ownerships || ownerships.length === 0) return [];
+
+  const artworkIds = ownerships.map((o) => o.artwork_id);
+  const { data: artworks, error: artErr } = await db
+    .from("artworks")
+    .select("*")
+    .in("id", artworkIds)
+    .eq("tier", "D");
+  if (artErr) throw artErr;
+  if (!artworks || artworks.length === 0) return [];
+
+  const artworkMap = new Map(artworks.map((a) => [a.id, a]));
+  return ownerships
+    .filter((o) => artworkMap.has(o.artwork_id))
+    .map((o) => ({ artwork: artworkMap.get(o.artwork_id)!, ownership: o }));
+}
+
+// ──────────────────────────────────────────────
+// Surprise Packages
+// ──────────────────────────────────────────────
+
+function drawTierFromWeights(tiers: Record<ArtworkTier, number>): ArtworkTier {
+  const roll = Math.random();
+  let cumulative = 0;
+  for (const [tier, weight] of Object.entries(tiers) as [ArtworkTier, number][]) {
+    cumulative += weight;
+    if (roll < cumulative) return tier;
+  }
+  return "D"; // fallback
+}
+
+function ivRangeForTier(tier: ArtworkTier): { min: number; max: number } {
+  // IV_TIER_THRESHOLDS is sorted descending: A >= 350k, B >= 75k, C >= 50k, D >= 0
+  const sorted = [...IV_TIER_THRESHOLDS].sort((a, b) => b.min - a.min);
+  const idx = sorted.findIndex((t) => t.tier === tier);
+  const min = sorted[idx].min;
+  const max = idx === 0 ? 1_000_000 : sorted[idx - 1].min - 1;
+  return { min, max };
+}
+
+export async function generatePackageArtwork(tier: ArtworkTier): Promise<Artwork> {
+  const { min, max } = ivRangeForTier(tier);
+  const iv = min + Math.floor(Math.random() * (max - min + 1));
+  const serial = Date.now().toString(36).slice(-4).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase();
+  const id = `art-pkg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+
+  const artwork: Record<string, unknown> = {
+    id,
+    title: `Mystery ${tier === "A" ? "Masterwork" : tier === "B" ? "Major Work" : tier === "C" ? "Study" : "Sketch"} #${serial}`,
+    artist: "Unknown",
+    year: null,
+    medium: "Mixed media",
+    tier,
+    insured_value: iv,
+    image_url: null,
+    image_url_web: null,
+    image_url_thumb: null,
+    tags: ["mystery", "package"],
+    description: `A ${tier === "A" ? "remarkable" : tier === "B" ? "significant" : tier === "C" ? "notable" : "modest"} work revealed from a surprise package.`,
+    gallery_notes: [
+      {
+        heading: "Provenance",
+        body: "Acquired through a mystery package. Origin and attribution pending further research.",
+      },
+      {
+        heading: "Market Significance",
+        body: `Tier ${tier} artwork with an insured value of ${iv.toLocaleString()} credits. Discovered in a surprise package.`,
+      },
+    ],
+    source: null,
+    source_id: null,
+    source_url: null,
+    rights_note: null,
+    status: "active",
+  };
+
+  const { data, error } = await db.from("artworks").insert(artwork).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function buyPackage(
+  userId: string,
+  packageKey: PackageKey,
+): Promise<{ artwork: Artwork; tier: ArtworkTier; packageLabel: string }> {
+  const pkg = SURPRISE_PACKAGES[packageKey];
+  if (!pkg) throw new Error(`Unknown package: ${packageKey}`);
+
+  // Check affordability
+  const credits = await getCredits(userId);
+  if (credits < pkg.cost) {
+    throw new Error(`Not enough credits. Need ${pkg.cost.toLocaleString()}, have ${credits.toLocaleString()}.`);
+  }
+
+  // Draw tier
+  const tier = drawTierFromWeights(pkg.tiers);
+
+  // Generate artwork
+  const artwork = await generatePackageArtwork(tier);
+
+  // Create ownership
+  const ownId = `own-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const { error: ownErr } = await db.from("ownerships").insert({
+    id: ownId,
+    artwork_id: artwork.id,
+    owner_id: userId,
+    acquired_via: `package_${packageKey}`,
+    is_active: true,
+    idle_weeks: 0,
+    on_loan: false,
+  });
+  if (ownErr) throw ownErr;
+
+  // Record provenance
+  const provId = `prov-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const { error: provErr } = await db.from("provenance_events").insert({
+    id: provId,
+    artwork_id: artwork.id,
+    event_type: "package_reveal",
+    from_owner: null,
+    to_owner: userId,
+    price: pkg.cost,
+    metadata: { via: `package_${packageKey}`, tier_drawn: tier },
+  });
+  if (provErr) throw provErr;
+
+  // Deduct credits
+  await adjustCredits(userId, -pkg.cost, `Surprise package: ${pkg.label}`);
+
+  return { artwork, tier, packageLabel: pkg.label };
 }
 
 // ──────────────────────────────────────────────
