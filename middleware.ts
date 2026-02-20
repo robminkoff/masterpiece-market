@@ -14,7 +14,6 @@ export async function middleware(request: NextRequest) {
   // Let static assets through
   if (
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/api") ||
     pathname.includes(".") // e.g. favicon.ico, images
   ) {
     return NextResponse.next();
@@ -43,13 +42,18 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  // Refresh session (important — keeps tokens alive)
+  // Refresh session (important — keeps tokens alive for both pages and API routes)
   let user = null;
   try {
     const { data } = await supabase.auth.getUser();
     user = data.user;
   } catch {
     // Supabase unreachable — treat as unauthenticated
+  }
+
+  // Skip redirect logic for API routes — they handle auth via 401 responses
+  if (pathname.startsWith("/api")) {
+    return response;
   }
 
   const isPublic = PUBLIC_ROUTES.has(pathname);
