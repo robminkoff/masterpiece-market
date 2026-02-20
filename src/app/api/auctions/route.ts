@@ -1,12 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auctions } from "@/data/store";
+import { getAuctions, createAuction, getArtworks } from "@/lib/db";
 import { CreateAuctionSchema } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/auctions — list all auctions
+// GET /api/auctions — list all auctions with joined artwork data
 export async function GET() {
-  return NextResponse.json({ auctions });
+  const [auctions, artworks] = await Promise.all([getAuctions(), getArtworks()]);
+  const artworkMap = new Map(artworks.map((a) => [a.id, a]));
+
+  const enriched = auctions.map((a) => ({
+    ...a,
+    artwork: artworkMap.get(a.artwork_id) ?? undefined,
+  }));
+
+  return NextResponse.json({ auctions: enriched });
 }
 
 // POST /api/auctions — create a new auction (admin/dev only)
@@ -24,12 +32,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "starts_at must be before ends_at" }, { status: 400 });
   }
 
-  const newAuction = {
+  const newAuction = await createAuction({
     id: `auc-${Date.now()}`,
     artwork_id: input.artwork_id,
     seller_id: null,
     auction_type: input.auction_type,
-    status: "scheduled" as const,
+    status: "scheduled",
     starting_bid: input.starting_bid,
     reserve_price: input.reserve_price ?? null,
     current_bid: 0,
@@ -38,9 +46,7 @@ export async function POST(request: NextRequest) {
     starts_at: input.starts_at,
     ends_at: input.ends_at,
     settled_at: null,
-  };
-
-  auctions.push(newAuction);
+  });
 
   return NextResponse.json({ auction: newAuction }, { status: 201 });
 }

@@ -16,6 +16,7 @@ export default function SignUpPage() {
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const usernameValid =
@@ -34,10 +35,14 @@ export default function SignUpPage() {
     setError(null);
 
     try {
-      // 1. Sign up with Supabase Auth
+      // 1. Sign up with Supabase Auth (store game profile in user_metadata
+      //    so it survives the email-confirmation round-trip)
       const { data, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: { username, display_name: displayName },
+        },
       });
 
       if (authError) {
@@ -51,12 +56,12 @@ export default function SignUpPage() {
       }
 
       if (!data.session) {
-        setError("Check your email to confirm your account, then sign in.");
+        setInfo("Check your email to confirm your account, then sign in.");
         setSaving(false);
         return;
       }
 
-      // 2. Create in-memory profile
+      // 2. Update profile with username/display_name
       const res = await fetch("/api/account", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -151,6 +156,12 @@ export default function SignUpPage() {
           maxLength={40}
           className="w-full border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--accent-dark)] mb-6"
         />
+
+        {info && (
+          <p className="text-sm text-green-600 dark:text-green-400 mb-4">
+            {info}
+          </p>
+        )}
 
         {error && (
           <p className="text-sm text-red-600 dark:text-red-400 mb-4">

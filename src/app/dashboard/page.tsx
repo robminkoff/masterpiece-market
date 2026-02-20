@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { STUB_USER_ID } from "@/lib/supabase";
 import { weeklyCarryCost, IDLE_WEEKS_THRESHOLD, LOAN_PREMIUM_REDUCTION, DEALER_BUY_RATE } from "@/lib/types";
 import type { EnrichedArtwork, ArtworkTier, Ownership } from "@/lib/types";
 import { ArtFrame } from "@/components/ArtFrame";
@@ -57,25 +56,28 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [showCreditModal, setShowCreditModal] = useState(false);
   const [showSellModal, setShowSellModal] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const loadData = useCallback(() => {
     Promise.all([
+      fetch("/api/account").then((r) => r.json()),
       fetch("/api/artworks").then((r) => r.json()),
       fetch("/api/credits").then((r) => r.json()),
-    ]).then(([artData, creditData]) => {
+    ]).then(([accountData, artData, creditData]) => {
+      const userId = accountData.profile?.id;
+      setCurrentUserId(userId ?? null);
       setCredits(creditData.credits ?? 0);
 
       const artworks = (artData.artworks ?? []) as (EnrichedArtwork & { ownership?: Ownership })[];
 
       // Build owned rows from artworks enriched with owner info
       const owned: OwnedRow[] = artworks
-        .filter((a) => a.owner?.owner_id === STUB_USER_ID)
+        .filter((a) => userId && a.owner?.owner_id === userId)
         .map((art) => {
           const iv = art.insured_value;
           const tier = art.tier as ArtworkTier;
-          // Find ownership data from the enriched artwork's owner info
           const onLoan = art.loan != null;
-          const idleWeeks = 0; // idle_weeks not in enriched response; carry uses 0 as default
+          const idleWeeks = 0;
           return {
             artworkId: art.id,
             title: art.title,
@@ -100,7 +102,6 @@ export default function DashboardPage() {
 
       // Activity feed: fetch provenance for user-owned artworks
       const feedItems: FeedItem[] = [];
-      // We'll use a simple fetch for provenance events
       const userArtIds = owned.map((r) => r.artworkId);
       const provenancePromises = userArtIds.map((id) =>
         fetch(`/api/artworks?id=${id}`).then((r) => r.json()),
@@ -111,10 +112,10 @@ export default function DashboardPage() {
           const provenance = (data.provenance ?? []) as import("@/lib/types").ProvenanceEvent[];
           const artName = data.artwork?.title ?? "";
           for (const e of provenance) {
-            if (e.to_owner !== STUB_USER_ID && e.from_owner !== STUB_USER_ID) continue;
+            if (userId && e.to_owner !== userId && e.from_owner !== userId) continue;
             const meta = e.metadata as Record<string, string>;
             if (e.event_type === "purchase") {
-              const isBuy = e.to_owner === STUB_USER_ID;
+              const isBuy = e.to_owner === userId;
               feedItems.push({
                 id: e.id,
                 label: isBuy ? "Acquired" : "Sold",

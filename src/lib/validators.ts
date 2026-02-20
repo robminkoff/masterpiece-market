@@ -7,7 +7,7 @@ export const AuctionTypeSchema = z.enum(["regular", "evening", "private", "force
 export const AuctionStatusSchema = z.enum(["scheduled", "live", "ended", "settled", "cancelled"]);
 
 export const CreateAuctionSchema = z.object({
-  artwork_id: z.string().uuid(),
+  artwork_id: z.string(),
   auction_type: AuctionTypeSchema.default("regular"),
   starting_bid: z.number().int().min(0).default(0),
   reserve_price: z.number().int().min(0).optional(),
@@ -16,7 +16,6 @@ export const CreateAuctionSchema = z.object({
 });
 
 export const PlaceBidSchema = z.object({
-  bidder_id: z.string().uuid(),
   amount: z.number().int().positive("Bid must be a positive integer"),
 });
 

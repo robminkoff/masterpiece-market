@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import type { EnrichedArtwork, ProvenanceEvent, NpcRole, Ownership } from "@/lib/types";
 import { TIER_CONFIG, weeklyCarryCost } from "@/lib/types";
-import { STUB_USER_ID } from "@/lib/supabase";
 import { ArtFrame } from "@/components/ArtFrame";
 import { GalleryNotes } from "@/components/GalleryNotes";
 import { SellOptionsPanel } from "@/components/SellOptionsPanel";
@@ -38,6 +37,7 @@ export default function ArtworkDetailPage() {
   const [provenance, setProvenance] = useState<ProvenanceEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const closeLightbox = useCallback(() => setLightbox(false), []);
 
@@ -49,6 +49,16 @@ export default function ArtworkDetailPage() {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [lightbox, closeLightbox]);
+
+  // Fetch the authenticated user's ID
+  useEffect(() => {
+    fetch("/api/account")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.profile?.id) setCurrentUserId(data.profile.id);
+      })
+      .catch(() => {});
+  }, []);
 
   const fetchData = useCallback(() => {
     fetch(`/api/artworks?id=${id}`)
@@ -72,7 +82,7 @@ export default function ArtworkDetailPage() {
   const costOnLoan = weeklyCarryCost(artwork.insured_value, artwork.tier, true, 0);
   const owner = artwork.owner;
   const loan = artwork.loan;
-  const isOwnedByUser = owner?.owner_id === STUB_USER_ID;
+  const isOwnedByUser = !!(currentUserId && owner?.owner_id === currentUserId);
   const isDealerOwned = owner?.role === "dealer";
 
   // Derive ownership record for SellOptionsPanel from enriched API data
@@ -80,7 +90,7 @@ export default function ArtworkDetailPage() {
     ? {
         id: `own-derived`,
         artwork_id: artwork.id,
-        owner_id: STUB_USER_ID,
+        owner_id: currentUserId!,
         acquired_at: owner.acquired_at,
         acquired_via: "api",
         is_active: true,

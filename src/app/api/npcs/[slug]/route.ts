@@ -1,24 +1,26 @@
 import { NextResponse } from "next/server";
-import { SEED_NPCS, SEED_OWNERSHIPS, SEED_PROVENANCE_EVENTS, SEED_ARTWORKS } from "@/data/seed";
+import {
+  getNpcBySlug,
+  getOwnershipsByOwner,
+  getProvenanceByOwner,
+  getArtworksByOwner,
+} from "@/lib/db";
 import type { ProfileEntity } from "@/lib/types";
 
-// GET /api/npcs/[slug] — look up NPC by slug (seed data)
+// GET /api/npcs/[slug] — look up NPC by slug
 export async function GET(_req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
-  const npc = SEED_NPCS.find((n) => n.slug === slug);
+  const npc = await getNpcBySlug(slug);
   if (!npc) {
     return NextResponse.json({ error: "NPC not found" }, { status: 404 });
   }
 
-  const ownerships = SEED_OWNERSHIPS.filter((o) => o.owner_id === npc.id);
-  const provenance = SEED_PROVENANCE_EVENTS.filter(
-    (e) => e.from_owner === npc.id || e.to_owner === npc.id,
-  );
-
-  const ownedArtworks = ownerships
-    .map((o) => SEED_ARTWORKS.find((a) => a.id === o.artwork_id))
-    .filter(Boolean);
+  const [ownerships, provenance, ownedArtworks] = await Promise.all([
+    getOwnershipsByOwner(npc.id),
+    getProvenanceByOwner(npc.id),
+    getArtworksByOwner(npc.id),
+  ]);
 
   const entity: ProfileEntity = {
     kind: "npc",

@@ -1,25 +1,24 @@
 import { NextResponse } from "next/server";
-import { getPlayerProfile, setPlayerProfile } from "@/data/store";
-import { createSupabaseServer } from "@/lib/supabase-server";
+import { getAuthUserId } from "@/lib/auth";
+import { getProfile, updateProfile } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 // GET /api/account — return current player profile (or null)
 export async function GET() {
-  const supabase = await createSupabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
+  const userId = await getAuthUserId();
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  return NextResponse.json({ profile: getPlayerProfile() });
+  const profile = await getProfile(userId);
+  return NextResponse.json({ profile });
 }
 
 // POST /api/account — create or update player profile
 export async function POST(req: Request) {
-  const supabase = await createSupabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
+  const userId = await getAuthUserId();
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -54,6 +53,9 @@ export async function POST(req: Request) {
     );
   }
 
-  const profile = setPlayerProfile(username, display_name.trim());
+  const profile = await updateProfile(userId, {
+    username,
+    display_name: display_name.trim(),
+  });
   return NextResponse.json({ profile });
 }

@@ -7,7 +7,6 @@ import { io, Socket } from "socket.io-client";
 import { BidPanel } from "@/components/BidPanel";
 import { AuctionTimer } from "@/components/AuctionTimer";
 import { ArtFrame } from "@/components/ArtFrame";
-import { STUB_USER_ID } from "@/lib/supabase";
 import type { Artwork } from "@/lib/types";
 
 interface BidEvent {
@@ -28,6 +27,17 @@ export default function LiveAuctionPage() {
   const [artwork, setArtwork] = useState<Artwork | null>(null);
   const [endsAt, setEndsAt] = useState(new Date(Date.now() + 3600_000).toISOString());
   const [status, setStatus] = useState("Connecting...");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Fetch the authenticated user's ID
+  useEffect(() => {
+    fetch("/api/account")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.profile?.id) setCurrentUserId(data.profile.id);
+      })
+      .catch(() => {});
+  }, []);
 
   // Fetch auction data (includes joined artwork) for the image
   useEffect(() => {
@@ -91,19 +101,18 @@ export default function LiveAuctionPage() {
       // Send via Socket.IO for realtime
       socket?.emit("auction:bid", {
         auction_id: auctionId,
-        bidder_id: STUB_USER_ID,
+        bidder_id: currentUserId,
         amount,
       });
 
       // Also POST to API for validation/persistence
-      // TODO: In production, the socket server would call the API internally
       await fetch(`/api/auctions/${auctionId}/bids`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bidder_id: STUB_USER_ID, amount }),
+        body: JSON.stringify({ amount }),
       });
     },
-    [socket, auctionId],
+    [socket, auctionId, currentUserId],
   );
 
   return (
@@ -172,7 +181,7 @@ export default function LiveAuctionPage() {
                 {bidHistory.map((b, i) => (
                   <div key={i} className="flex justify-between text-sm py-1 border-b border-gray-100 dark:border-gray-800 last:border-0">
                     <span className="text-gray-500 truncate max-w-[120px]">
-                      {b.bidder_id === STUB_USER_ID ? "You" : b.bidder_id.slice(0, 8)}
+                      {b.bidder_id === currentUserId ? "You" : b.bidder_id.slice(0, 8)}
                     </span>
                     <span className="font-medium">{b.amount.toLocaleString()} cr</span>
                   </div>

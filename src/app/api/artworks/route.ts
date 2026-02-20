@@ -1,34 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SEED_ARTWORKS, SEED_NPCS, DEMO_COLLECTOR_ID } from "@/data/seed";
-import { ownerships, provenanceEvents } from "@/data/store";
-import { STUB_USER_ID } from "@/lib/supabase";
-import { getPlayerProfile } from "@/data/store";
+import {
+  getArtworks,
+  getArtwork,
+  getAllActiveOwnerships,
+  getProvenanceByArtwork,
+  getNpcs,
+  getProfile,
+} from "@/lib/db";
 import { dealerAskingPrice } from "@/lib/types";
-import type { ArtworkLoanInfo, ArtworkOwnerInfo, EnrichedArtwork } from "@/lib/types";
+import type { ArtworkLoanInfo, ArtworkOwnerInfo, EnrichedArtwork, Npc, Ownership, ProvenanceEvent } from "@/lib/types";
 
-function buildOwnerInfo(ownership: (typeof ownerships)[number]): ArtworkOwnerInfo {
-  if (ownership.owner_id === STUB_USER_ID) {
-    const profile = getPlayerProfile();
-    return {
-      owner_id: STUB_USER_ID,
-      owner_type: "user",
-      display_name: profile?.display_name ?? "Player",
-      slug: profile?.username ?? "player",
-      acquired_at: ownership.acquired_at,
-    };
-  }
-
-  if (ownership.owner_id === DEMO_COLLECTOR_ID) {
-    return {
-      owner_id: DEMO_COLLECTOR_ID,
-      owner_type: "user",
-      display_name: "Eleanor Voss",
-      slug: "demo-collector",
-      acquired_at: ownership.acquired_at,
-    };
-  }
-
-  const npc = SEED_NPCS.find((n) => n.id === ownership.owner_id);
+function buildOwnerInfo(
+  ownership: Ownership,
+  npcs: Npc[],
+  profileCache: Map<string, { display_name: string; username: string }>,
+): ArtworkOwnerInfo {
+  // NPC owner
+  const npc = npcs.find((n) => n.id === ownership.owner_id);
   if (npc) {
     return {
       owner_id: npc.id,
@@ -41,17 +29,23 @@ function buildOwnerInfo(ownership: (typeof ownerships)[number]): ArtworkOwnerInf
     };
   }
 
+  // User owner
+  const cached = profileCache.get(ownership.owner_id);
   return {
     owner_id: ownership.owner_id,
     owner_type: "user",
-    display_name: "Unknown",
-    slug: "unknown",
+    display_name: cached?.display_name ?? "Collector",
+    slug: cached?.username ?? "unknown",
     acquired_at: ownership.acquired_at,
   };
 }
 
-function buildLoanInfo(artworkId: string): ArtworkLoanInfo | undefined {
-  const loanEvent = provenanceEvents
+function buildLoanInfo(
+  artworkId: string,
+  provEvents: ProvenanceEvent[],
+  npcs: Npc[],
+): ArtworkLoanInfo | undefined {
+  const loanEvent = provEvents
     .filter((e) => e.artwork_id === artworkId && (e.event_type === "loan" || e.event_type === "exhibition"))
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
 
@@ -61,7 +55,7 @@ function buildLoanInfo(artworkId: string): ArtworkLoanInfo | undefined {
   const borrowerId = loanEvent.event_type === "loan" ? loanEvent.to_owner : loanEvent.from_owner;
   if (!borrowerId) return undefined;
 
-  const borrowerNpc = SEED_NPCS.find((n) => n.id === borrowerId);
+  const borrowerNpc = npcs.find((n) => n.id === borrowerId);
   if (!borrowerNpc) return undefined;
 
   return {
@@ -72,40 +66,84 @@ function buildLoanInfo(artworkId: string): ArtworkLoanInfo | undefined {
   };
 }
 
-function enrichArtwork(artwork: (typeof SEED_ARTWORKS)[number]): EnrichedArtwork & { dealer_price?: number } {
-  const ownership = ownerships.find(
-    (o) => o.artwork_id === artwork.id && o.is_active,
-  );
-
-  const owner = ownership ? buildOwnerInfo(ownership) : undefined;
-  const loan = ownership?.on_loan ? buildLoanInfo(artwork.id) : undefined;
-
-  // Add dealer price when owner is a dealer NPC
-  let dealer_price: number | undefined;
-  if (ownership && owner?.role === "dealer") {
-    dealer_price = dealerAskingPrice(artwork.insured_value, ownership.owner_id);
-  }
-
-  return { ...artwork, owner, loan, dealer_price };
-}
-
 // GET /api/artworks — list all artworks, or single artwork with ?id=
 export async function GET(request: NextRequest) {
   const id = request.nextUrl.searchParams.get("id");
 
   if (id) {
-    const artwork = SEED_ARTWORKS.find((a) => a.id === id);
+    const artwork = await getArtwork(id);
     if (!artwork) {
       return NextResponse.json({ error: "Artwork not found" }, { status: 404 });
     }
-    const enriched = enrichArtwork(artwork);
-    const provenance = provenanceEvents
-      .filter((e) => e.artwork_id === id)
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    const provenance = await getProvenanceByArtwork(id);
+    const ownerships = await getAllActiveOwnerships();
+    const npcs = await getNpcs();
 
+    const ownership = ownerships.find((o) => o.artwork_id === id && o.is_active);
+    const profileCache = new Map<string, { display_name: string; username: string }>();
+    if (ownership && !npcs.find((n) => n.id === ownership.owner_id)) {
+      const profile = await getProfile(ownership.owner_id);
+      if (profile) {
+        profileCache.set(ownership.owner_id, {
+          display_name: profile.display_name,
+          username: profile.username ?? "unknown",
+        });
+      }
+    }
+
+    const owner = ownership ? buildOwnerInfo(ownership, npcs, profileCache) : undefined;
+    const loan = ownership?.on_loan ? buildLoanInfo(id, provenance, npcs) : undefined;
+
+    let dealer_price: number | undefined;
+    if (ownership && owner?.role === "dealer") {
+      dealer_price = dealerAskingPrice(artwork.insured_value, ownership.owner_id);
+    }
+
+    const enriched: EnrichedArtwork & { dealer_price?: number } = {
+      ...artwork,
+      owner,
+      loan,
+      dealer_price,
+    };
     return NextResponse.json({ artwork: enriched, provenance });
   }
 
-  const artworks = SEED_ARTWORKS.map(enrichArtwork);
-  return NextResponse.json({ artworks });
+  // List all artworks
+  const [artworks, ownerships, npcs] = await Promise.all([
+    getArtworks(),
+    getAllActiveOwnerships(),
+    getNpcs(),
+  ]);
+
+  // Collect unique user owner IDs to batch-fetch profiles
+  const userOwnerIds = new Set<string>();
+  for (const o of ownerships) {
+    if (!npcs.find((n) => n.id === o.owner_id)) {
+      userOwnerIds.add(o.owner_id);
+    }
+  }
+  const profileCache = new Map<string, { display_name: string; username: string }>();
+  for (const uid of userOwnerIds) {
+    const profile = await getProfile(uid);
+    if (profile) {
+      profileCache.set(uid, {
+        display_name: profile.display_name,
+        username: profile.username ?? "unknown",
+      });
+    }
+  }
+
+  const enriched = artworks.map((artwork) => {
+    const ownership = ownerships.find((o) => o.artwork_id === artwork.id && o.is_active);
+    const owner = ownership ? buildOwnerInfo(ownership, npcs, profileCache) : undefined;
+
+    let dealer_price: number | undefined;
+    if (ownership && owner?.role === "dealer") {
+      dealer_price = dealerAskingPrice(artwork.insured_value, ownership.owner_id);
+    }
+
+    return { ...artwork, owner, dealer_price } as EnrichedArtwork & { dealer_price?: number };
+  });
+
+  return NextResponse.json({ artworks: enriched });
 }

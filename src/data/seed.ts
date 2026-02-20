@@ -2,7 +2,6 @@
 // Used by API route stubs and can be adapted into a real DB seed script.
 
 import type { Artwork, Auction, GalleryNoteSection, Museum, MuseumExhibition, Npc, Ownership, ProvenanceEvent } from "@/lib/types";
-import { STUB_USER_ID } from "@/lib/supabase";
 
 export const DEMO_COLLECTOR_ID = "00000000-0000-0000-0000-000000000099";
 

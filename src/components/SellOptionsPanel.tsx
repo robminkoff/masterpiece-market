@@ -3,7 +3,6 @@
 import { useState } from "react";
 import type { EnrichedArtwork, Ownership } from "@/lib/types";
 import { DEALER_BUY_RATE, AUCTION_BACKSTOP_RATE, canResell } from "@/lib/types";
-import { STUB_USER_ID } from "@/lib/supabase";
 
 interface SellOptionsPanelProps {
   artwork: EnrichedArtwork;
@@ -32,7 +31,7 @@ export function SellOptionsPanel({ artwork, ownership, inAuction, onSold }: Sell
       const res = await fetch("/api/sell-to-dealer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ artwork_id: artwork.id, seller_id: STUB_USER_ID }),
+        body: JSON.stringify({ artwork_id: artwork.id }),
       });
       if (res.ok) {
         setResult("sold");
@@ -56,7 +55,7 @@ export function SellOptionsPanel({ artwork, ownership, inAuction, onSold }: Sell
       const res = await fetch("/api/send-to-auction", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ artwork_id: artwork.id, seller_id: STUB_USER_ID }),
+        body: JSON.stringify({ artwork_id: artwork.id }),
       });
       if (res.ok) {
         setResult("auctioned");

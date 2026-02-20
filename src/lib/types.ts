@@ -67,6 +67,7 @@ export interface Profile {
   stewardship: number;
   created_at: string;
   last_active: string;
+  last_burn_at: string;
 }
 
 export type ArtworkSource = "met" | "rijks" | "nga" | "iiif" | "wikimedia";

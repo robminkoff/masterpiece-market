@@ -1,9 +1,8 @@
 import { create } from "zustand";
 import type { Artwork, Auction, Profile } from "./types";
-import { STUB_USER } from "./supabase";
 
 interface AppState {
-  // Current user (stubbed for v0)
+  // Current user
   user: Profile | null;
   setUser: (u: Profile) => void;
 
@@ -25,11 +24,7 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  user: {
-    ...STUB_USER,
-    created_at: new Date().toISOString(),
-    last_active: new Date().toISOString(),
-  },
+  user: null,
   setUser: (u) => set({ user: u }),
 
   artworks: [],

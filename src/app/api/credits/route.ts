@@ -1,38 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-
-export const dynamic = "force-dynamic";
+import { getAuthUserId } from "@/lib/auth";
 import {
   getCredits,
-  applyBurnTick,
   adjustCredits,
-  persistState,
-  ownerships,
-} from "@/data/store";
-import { SEED_ARTWORKS } from "@/data/seed";
-import { STUB_USER_ID } from "@/lib/supabase";
+  applyBurnTick,
+  getOwnershipsByOwner,
+  getArtworks,
+} from "@/lib/db";
 import { weeklyCarryCost } from "@/lib/types";
 import type { ArtworkTier } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/credits — returns current balance, triggers burn tick
 export async function GET() {
-  const burn = applyBurnTick();
-  if (burn.weeksElapsed > 0) {
-    persistState();
+  const userId = await getAuthUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const burn = await applyBurnTick(userId);
+
   // Calculate current weekly burn
-  const playerOwned = ownerships.filter(
-    (o) => o.owner_id === STUB_USER_ID && o.is_active,
-  );
+  const [playerOwned, artworks] = await Promise.all([
+    getOwnershipsByOwner(userId),
+    getArtworks(),
+  ]);
+  const artworkMap = new Map(artworks.map((a) => [a.id, a]));
+
   const weeklyBurn = playerOwned.reduce((sum, o) => {
-    const art = SEED_ARTWORKS.find((a) => a.id === o.artwork_id);
+    const art = artworkMap.get(o.artwork_id);
     if (!art) return sum;
     return sum + weeklyCarryCost(art.insured_value, art.tier as ArtworkTier, o.on_loan, o.idle_weeks);
   }, 0);
 
+  const credits = await getCredits(userId);
+
   return NextResponse.json({
-    credits: getCredits(),
+    credits,
     burn,
     weeklyBurn,
   });
@@ -48,6 +54,11 @@ const TopUpSchema = z.object({
 
 // POST /api/credits — add credits (top-up)
 export async function POST(request: NextRequest) {
+  const userId = await getAuthUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = await request.json();
   const parsed = TopUpSchema.safeParse(body);
 
@@ -56,8 +67,7 @@ export async function POST(request: NextRequest) {
   }
 
   const { amount } = parsed.data;
-  adjustCredits(+amount, "Credit top-up");
-  persistState();
+  const credits = await adjustCredits(userId, +amount, "Credit top-up");
 
-  return NextResponse.json({ credits: getCredits() });
+  return NextResponse.json({ credits });
 }

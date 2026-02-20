@@ -1,94 +1,191 @@
 /**
  * Masterpiece Market — Database Seed Script
  *
- * Usage (once Supabase is configured):
+ * Populates the Supabase database with initial game data.
+ * Uses UPSERT (ON CONFLICT DO UPDATE) so it's safe to re-run.
+ *
+ * Requirements:
+ *   NEXT_PUBLIC_SUPABASE_URL  — set in .env.local or environment
+ *   SUPABASE_SERVICE_KEY      — set in .env.local or environment
+ *
+ * Usage:
  *   npx tsx scripts/seed.ts
- *
- * For v0, this file documents the seed data structure.
- * The actual data is in src/data/seed.ts and served via API routes.
- *
- * When connected to Supabase, this script will:
- * 1. Insert 20 artworks
- * 2. Insert 12 curators + 6 dealers
- * 3. Insert 1-2 sample auctions
  */
 
-// TODO: Replace with real Supabase client
-// import { createClient } from "@supabase/supabase-js";
-// const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_KEY!);
+import { createClient } from "@supabase/supabase-js";
+import {
+  SEED_ARTWORKS,
+  SEED_NPCS,
+  SEED_OWNERSHIPS,
+  SEED_PROVENANCE_EVENTS,
+  SEED_AUCTIONS,
+} from "../src/data/seed";
 
-import { SEED_ARTWORKS, SEED_NPCS, SEED_AUCTIONS, SEED_MUSEUMS, SEED_MUSEUM_EXHIBITIONS } from "../src/data/seed";
+// Load .env.local for local dev
+import { config } from "dotenv";
+config({ path: ".env.local" });
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+
+if (!SUPABASE_URL || !SERVICE_KEY) {
+  console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_KEY");
+  process.exit(1);
+}
+
+const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
 async function seed() {
   console.log("=== Masterpiece Market Seed Script ===\n");
 
   // --- Artworks ---
-  console.log(`Artworks to seed: ${SEED_ARTWORKS.length}`);
-  for (const a of SEED_ARTWORKS) {
-    console.log(`  [${a.tier}] ${a.title} by ${a.artist} — IV: ${a.insured_value.toLocaleString()}`);
-  }
+  console.log(`Seeding ${SEED_ARTWORKS.length} artworks...`);
+  const artworkRows = SEED_ARTWORKS.map((a) => ({
+    id: a.id,
+    title: a.title,
+    artist: a.artist,
+    year: a.year,
+    medium: a.medium,
+    tier: a.tier,
+    insured_value: a.insured_value,
+    image_url: a.image_url,
+    image_url_web: a.image_url_web,
+    image_url_thumb: a.image_url_thumb,
+    tags: a.tags,
+    description: a.description,
+    gallery_notes: a.gallery_notes,
+    native_width: a.native_width,
+    native_height: a.native_height,
+    dominant_orientation: a.dominant_orientation,
+    source: a.source,
+    source_id: a.source_id,
+    source_url: a.source_url,
+    rights_note: a.rights_note,
+    status: a.status,
+  }));
 
-  // TODO: Insert into Supabase
-  // const { error: artErr } = await supabase.from("artworks").upsert(
-  //   SEED_ARTWORKS.map(({ created_at, ...rest }) => rest)
-  // );
-  // if (artErr) throw artErr;
+  const { error: artErr } = await supabase
+    .from("artworks")
+    .upsert(artworkRows, { onConflict: "id" });
+  if (artErr) {
+    console.error("Artworks error:", artErr);
+    throw artErr;
+  }
+  console.log(`  ✓ ${artworkRows.length} artworks upserted`);
 
   // --- NPCs ---
-  const curators = SEED_NPCS.filter((n) => n.role === "curator");
-  const dealers = SEED_NPCS.filter((n) => n.role === "dealer");
-  console.log(`\nCurators to seed: ${curators.length}`);
-  for (const c of curators) {
-    console.log(`  [${c.npc_tier}] ${c.name} — ${c.specialty}`);
-  }
-  console.log(`\nDealers to seed: ${dealers.length}`);
-  for (const d of dealers) {
-    console.log(`  [${d.npc_tier}] ${d.name} — ${d.specialty}`);
-  }
+  console.log(`Seeding ${SEED_NPCS.length} NPCs...`);
+  const npcRows = SEED_NPCS.map((n) => ({
+    id: n.id,
+    name: n.name,
+    role: n.role,
+    npc_tier: n.npc_tier,
+    slug: n.slug,
+    specialty: n.specialty,
+    description: n.description,
+    traits: n.traits,
+    credits: n.credits,
+    prestige: n.prestige,
+    stewardship_score: n.stewardship_score,
+    npc_data: n.npc_data,
+    unlock_tier: n.unlock_tier,
+  }));
 
-  // TODO: Insert into Supabase
-  // const { error: npcErr } = await supabase.from("npcs").upsert(
-  //   SEED_NPCS.map(({ created_at, ...rest }) => rest)
-  // );
-  // if (npcErr) throw npcErr;
+  const { error: npcErr } = await supabase
+    .from("npcs")
+    .upsert(npcRows, { onConflict: "id" });
+  if (npcErr) {
+    console.error("NPCs error:", npcErr);
+    throw npcErr;
+  }
+  console.log(`  ✓ ${npcRows.length} NPCs upserted`);
+
+  // --- Ownerships ---
+  // Filter out stub user ownerships (they'll be created by real users)
+  const STUB_USER_ID = "00000000-0000-0000-0000-000000000001";
+  const DEMO_COLLECTOR_ID = "00000000-0000-0000-0000-000000000099";
+  const ownershipRows = SEED_OWNERSHIPS.filter(
+    (o) => o.owner_id !== STUB_USER_ID && o.owner_id !== DEMO_COLLECTOR_ID,
+  ).map((o) => ({
+    id: o.id,
+    artwork_id: o.artwork_id,
+    owner_id: o.owner_id,
+    acquired_at: o.acquired_at,
+    acquired_via: o.acquired_via,
+    is_active: o.is_active,
+    idle_weeks: o.idle_weeks,
+    on_loan: o.on_loan,
+  }));
+
+  console.log(`Seeding ${ownershipRows.length} ownerships...`);
+  const { error: ownErr } = await supabase
+    .from("ownerships")
+    .upsert(ownershipRows, { onConflict: "id" });
+  if (ownErr) {
+    console.error("Ownerships error:", ownErr);
+    throw ownErr;
+  }
+  console.log(`  ✓ ${ownershipRows.length} ownerships upserted`);
+
+  // --- Provenance Events ---
+  const provRows = SEED_PROVENANCE_EVENTS.filter(
+    (e) =>
+      e.to_owner !== STUB_USER_ID &&
+      e.from_owner !== STUB_USER_ID &&
+      e.to_owner !== DEMO_COLLECTOR_ID &&
+      e.from_owner !== DEMO_COLLECTOR_ID,
+  ).map((e) => ({
+    id: e.id,
+    artwork_id: e.artwork_id,
+    event_type: e.event_type,
+    from_owner: e.from_owner,
+    to_owner: e.to_owner,
+    price: e.price,
+    metadata: e.metadata,
+    created_at: e.created_at,
+  }));
+
+  console.log(`Seeding ${provRows.length} provenance events...`);
+  const { error: provErr } = await supabase
+    .from("provenance_events")
+    .upsert(provRows, { onConflict: "id" });
+  if (provErr) {
+    console.error("Provenance error:", provErr);
+    throw provErr;
+  }
+  console.log(`  ✓ ${provRows.length} provenance events upserted`);
 
   // --- Auctions ---
-  console.log(`\nAuctions to seed: ${SEED_AUCTIONS.length}`);
-  for (const a of SEED_AUCTIONS) {
-    console.log(`  [${a.status}] ${a.id} — starting at ${a.starting_bid.toLocaleString()} cr`);
+  const auctionRows = SEED_AUCTIONS.map((a) => ({
+    id: a.id,
+    artwork_id: a.artwork_id,
+    seller_id: a.seller_id,
+    auction_type: a.auction_type,
+    status: a.status,
+    starting_bid: a.starting_bid,
+    reserve_price: a.reserve_price,
+    current_bid: a.current_bid,
+    current_bidder: a.current_bidder,
+    bid_count: a.bid_count,
+    starts_at: a.starts_at,
+    ends_at: a.ends_at,
+    settled_at: a.settled_at,
+  }));
+
+  console.log(`Seeding ${auctionRows.length} auctions...`);
+  const { error: aucErr } = await supabase
+    .from("auctions")
+    .upsert(auctionRows, { onConflict: "id" });
+  if (aucErr) {
+    console.error("Auctions error:", aucErr);
+    throw aucErr;
   }
+  console.log(`  ✓ ${auctionRows.length} auctions upserted`);
 
-  // TODO: Insert into Supabase
-  // const { error: aucErr } = await supabase.from("auctions").upsert(
-  //   SEED_AUCTIONS.map(({ artwork, created_at, ...rest }) => rest)
-  // );
-  // if (aucErr) throw aucErr;
-
-  // --- Museums ---
-  console.log(`\nMuseums to seed: ${SEED_MUSEUMS.length}`);
-  for (const m of SEED_MUSEUMS) {
-    console.log(`  [${m.status}] ${m.name} — endowment: ${m.endowment.toLocaleString()} cr`);
-  }
-
-  // TODO: Insert into Supabase
-  // const { error: musErr } = await supabase.from("museums").upsert(
-  //   SEED_MUSEUMS.map(({ owner, created_at, ...rest }) => rest)
-  // );
-  // if (musErr) throw musErr;
-
-  // --- Museum Exhibitions ---
-  console.log(`\nMuseum Exhibitions to seed: ${SEED_MUSEUM_EXHIBITIONS.length}`);
-  for (const e of SEED_MUSEUM_EXHIBITIONS) {
-    console.log(`  [${e.status}] ${e.title}`);
-  }
-
-  // TODO: Insert into Supabase
-  // const { error: mexErr } = await supabase.from("museum_exhibitions").upsert(
-  //   SEED_MUSEUM_EXHIBITIONS.map(({ created_at, ...rest }) => rest)
-  // );
-  // if (mexErr) throw mexErr;
-
-  console.log("\n✓ Seed data logged. Connect Supabase and uncomment inserts to populate the database.");
+  console.log("\n✓ Database seeded successfully!");
 }
 
-seed().catch(console.error);
+seed().catch((err) => {
+  console.error("Seed failed:", err);
+  process.exit(1);
+});
