@@ -101,21 +101,27 @@ async function seed() {
   console.log(`  ✓ ${npcRows.length} NPCs upserted`);
 
   // --- Ownerships ---
-  // Filter out stub user ownerships (they'll be created by real users)
+  // Replace stub/demo user ownerships with dealer assignments so artworks aren't orphaned
   const STUB_USER_ID = "00000000-0000-0000-0000-000000000001";
   const DEMO_COLLECTOR_ID = "00000000-0000-0000-0000-000000000099";
-  const ownershipRows = SEED_OWNERSHIPS.filter(
-    (o) => o.owner_id !== STUB_USER_ID && o.owner_id !== DEMO_COLLECTOR_ID,
-  ).map((o) => ({
-    id: o.id,
-    artwork_id: o.artwork_id,
-    owner_id: o.owner_id,
-    acquired_at: o.acquired_at,
-    acquired_via: o.acquired_via,
-    is_active: o.is_active,
-    idle_weeks: o.idle_weeks,
-    on_loan: o.on_loan,
-  }));
+  const FALLBACK_DEALERS = ["npc-d01", "npc-d02", "npc-d03", "npc-d04", "npc-d05", "npc-d06"];
+  let dealerIdx = 0;
+  const ownershipRows = SEED_OWNERSHIPS.map((o) => {
+    const isStubOrDemo = o.owner_id === STUB_USER_ID || o.owner_id === DEMO_COLLECTOR_ID;
+    const ownerId = isStubOrDemo
+      ? FALLBACK_DEALERS[dealerIdx++ % FALLBACK_DEALERS.length]
+      : o.owner_id;
+    return {
+      id: o.id,
+      artwork_id: o.artwork_id,
+      owner_id: ownerId,
+      acquired_at: o.acquired_at,
+      acquired_via: isStubOrDemo ? "consignment" : o.acquired_via,
+      is_active: o.is_active,
+      idle_weeks: o.idle_weeks,
+      on_loan: isStubOrDemo ? false : o.on_loan,
+    };
+  });
 
   console.log(`Seeding ${ownershipRows.length} ownerships...`);
   const { error: ownErr } = await supabase
@@ -128,22 +134,28 @@ async function seed() {
   console.log(`  ✓ ${ownershipRows.length} ownerships upserted`);
 
   // --- Provenance Events ---
-  const provRows = SEED_PROVENANCE_EVENTS.filter(
-    (e) =>
-      e.to_owner !== STUB_USER_ID &&
-      e.from_owner !== STUB_USER_ID &&
-      e.to_owner !== DEMO_COLLECTOR_ID &&
-      e.from_owner !== DEMO_COLLECTOR_ID,
-  ).map((e) => ({
-    id: e.id,
-    artwork_id: e.artwork_id,
-    event_type: e.event_type,
-    from_owner: e.from_owner,
-    to_owner: e.to_owner,
-    price: e.price,
-    metadata: e.metadata,
-    created_at: e.created_at,
-  }));
+  // Replace stub/demo user references with dealer IDs
+  let provDealerIdx = 0;
+  const provRows = SEED_PROVENANCE_EVENTS.map((e) => {
+    let fromOwner = e.from_owner;
+    let toOwner = e.to_owner;
+    if (fromOwner === STUB_USER_ID || fromOwner === DEMO_COLLECTOR_ID) {
+      fromOwner = FALLBACK_DEALERS[provDealerIdx++ % FALLBACK_DEALERS.length];
+    }
+    if (toOwner === STUB_USER_ID || toOwner === DEMO_COLLECTOR_ID) {
+      toOwner = FALLBACK_DEALERS[provDealerIdx++ % FALLBACK_DEALERS.length];
+    }
+    return {
+      id: e.id,
+      artwork_id: e.artwork_id,
+      event_type: e.event_type,
+      from_owner: fromOwner,
+      to_owner: toOwner,
+      price: e.price,
+      metadata: e.metadata,
+      created_at: e.created_at,
+    };
+  });
 
   console.log(`Seeding ${provRows.length} provenance events...`);
   const { error: provErr } = await supabase
