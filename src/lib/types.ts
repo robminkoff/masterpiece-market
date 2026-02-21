@@ -30,10 +30,10 @@ export function tierFromIV(iv: number): ArtworkTier {
 }
 
 export const TIER_CONFIG = {
-  A: { premiumRate: 0.015, storageFee: 1_000, label: "Iconic" },
-  B: { premiumRate: 0.015, storageFee: 400, label: "Major" },
-  C: { premiumRate: 0.008, storageFee: 100, label: "Mid" },
-  D: { premiumRate: 0.003, storageFee: 20, label: "Minor" },
+  A: { premiumRate: 0.015, storageFee: 1_000 },
+  B: { premiumRate: 0.015, storageFee: 400 },
+  C: { premiumRate: 0.008, storageFee: 100 },
+  D: { premiumRate: 0.003, storageFee: 20 },
 } as const;
 
 export const CURATOR_LOAN_FEES: Record<CuratorTier, number> = {
@@ -54,6 +54,7 @@ export const BUYER_PREMIUM_RATE = 0.05;
 export const SELLER_FEE_RATE = 0.025;
 export const BID_EXTENSION_SECONDS = 15;
 export const MIN_HOLD_HOURS = 0;
+export const MAX_ACQUISITIONS_PER_WEEK = 1;
 
 // ---------- Entity interfaces ----------
 
@@ -91,13 +92,13 @@ export interface GalleryNoteSection {
  *   - "Historical Context"   — provenance, commission history, when/where created
  *   - "Technique"            — materials, method, what makes the execution notable
  *   - "Cultural Impact"      — influence on later art, popular culture, public consciousness
- *   - "Market Significance"  — REQUIRED — explains the artwork's tier/IV in gameplay terms
+ *   - "Market Significance"  — REQUIRED — explains the artwork's IV and market dynamics in gameplay terms
  *
  * Example:
  *   gallery_notes: [
  *     { heading: "Historical Context", body: "Painted in Rome in 1505 for Cardinal X..." },
  *     { heading: "Technique", body: "Employs cross-hatching on toned paper..." },
- *     { heading: "Market Significance", body: "Tier B IV reflects strong academic demand..." },
+ *     { heading: "Market Significance", body: "Strong academic demand keeps loan placement reliable..." },
  *   ]
  */
 export interface Artwork {
@@ -374,32 +375,20 @@ export function dealerAskingPrice(iv: number, dealerId: string): number {
 
 // ---------- Surprise Packages ----------
 
-export type PackageKey = "bronze" | "silver" | "gold";
+export type PackageKey = "mystery";
 
 export interface SurprisePackage {
   key: PackageKey;
   label: string;
   cost: number;
-  tiers: Record<ArtworkTier, number>; // probability weights summing to 1
+  tiers: Record<ArtworkTier, number>; // probability weights summing to 1 (not disclosed to players)
 }
 
 export const SURPRISE_PACKAGES: Record<PackageKey, SurprisePackage> = {
-  bronze: {
-    key: "bronze",
-    label: "Bronze",
-    cost: 25_000,
-    tiers: { D: 0.80, C: 0.15, B: 0.04, A: 0.01 },
-  },
-  silver: {
-    key: "silver",
-    label: "Silver",
-    cost: 75_000,
-    tiers: { D: 0.30, C: 0.40, B: 0.25, A: 0.05 },
-  },
-  gold: {
-    key: "gold",
-    label: "Gold",
-    cost: 200_000,
-    tiers: { D: 0.05, C: 0.15, B: 0.40, A: 0.40 },
+  mystery: {
+    key: "mystery",
+    label: "Mystery",
+    cost: 100_000,
+    tiers: { D: 0.20, C: 0.35, B: 0.35, A: 0.10 },
   },
 };

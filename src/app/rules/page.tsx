@@ -160,6 +160,10 @@ export default function RulesPage() {
             their listed price.
           </li>
         </ul>
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-3 font-medium bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 px-4 py-2 rounded-lg">
+          Acquisition Limit: You may acquire at most <strong>1 artwork per week</strong> through
+          dealer purchases and mystery packages. Auction wins are not subject to this limit.
+        </p>
 
         <h3 className="font-semibold mt-4 mb-2">3. Hold and Manage Your Collection</h3>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-3">
@@ -212,29 +216,24 @@ export default function RulesPage() {
             <thead className="bg-gray-50 dark:bg-gray-900">
               <tr>
                 <th className="text-left p-3 font-medium text-gray-500">Tier</th>
-                <th className="text-left p-3 font-medium text-gray-500">Label</th>
                 <th className="text-left p-3 font-medium text-gray-500">IV Threshold</th>
               </tr>
             </thead>
             <tbody className="text-gray-600 dark:text-gray-300">
               <tr className="border-t border-gray-100 dark:border-gray-800">
                 <td className="p-3 font-semibold">A</td>
-                <td className="p-3">Iconic</td>
                 <td className="p-3">&ge; 350,000 cr</td>
               </tr>
               <tr className="border-t border-gray-100 dark:border-gray-800">
                 <td className="p-3 font-semibold">B</td>
-                <td className="p-3">Major</td>
                 <td className="p-3">&ge; 75,000 cr</td>
               </tr>
               <tr className="border-t border-gray-100 dark:border-gray-800">
                 <td className="p-3 font-semibold">C</td>
-                <td className="p-3">Mid</td>
                 <td className="p-3">&ge; 50,000 cr</td>
               </tr>
               <tr className="border-t border-gray-100 dark:border-gray-800">
                 <td className="p-3 font-semibold">D</td>
-                <td className="p-3">Minor</td>
                 <td className="p-3">&lt; 50,000 cr</td>
               </tr>
             </tbody>
@@ -322,7 +321,7 @@ export default function RulesPage() {
 
         <h3 className="font-semibold mt-4 mb-2">Starting Credits</h3>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-3">
-          Players begin with <strong>250,000 cr</strong>.
+          Players begin with <strong>1,000,000 cr</strong>.
         </p>
 
         <h3 className="font-semibold mt-4 mb-2">Top-Up Packs</h3>
@@ -428,15 +427,15 @@ export default function RulesPage() {
         </p>
         <ul className="list-disc pl-6 text-gray-600 dark:text-gray-300 space-y-1 mb-3">
           <li>
-            <strong>+250,000 cr</strong> per museum founded
+            <strong>+1,000,000 cr</strong> per museum founded
           </li>
           <li>
-            <strong>Maximum: 9 museums</strong> (2,250,000 cr bonus cap)
+            <strong>Maximum: 9 museums</strong> (9,000,000 cr bonus cap)
           </li>
         </ul>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed font-mono text-sm bg-gray-50 dark:bg-gray-900 px-4 py-2 rounded-lg">
-          Next-run starting credits = 250,000 + min(Museums Founded, 9) &times;
-          250,000
+          Next-run starting credits = 1,000,000 + min(Museums Founded, 9) &times;
+          1,000,000
         </p>
       </section>
 

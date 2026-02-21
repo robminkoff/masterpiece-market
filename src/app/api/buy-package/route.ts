@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { getAuthUserId } from "@/lib/auth";
-import { buyPackage } from "@/lib/db";
+import { buyPackage, getWeeklyAcquisitionCount } from "@/lib/db";
+import { MAX_ACQUISITIONS_PER_WEEK } from "@/lib/types";
 import type { PackageKey } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-const VALID_KEYS = new Set<PackageKey>(["bronze", "silver", "gold"]);
+const VALID_KEYS = new Set<PackageKey>(["mystery"]);
 
 export async function POST(req: Request) {
   const userId = await getAuthUserId();
@@ -13,12 +14,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await req.json();
-  const packageKey = body.package as string;
-
-  if (!packageKey || !VALID_KEYS.has(packageKey as PackageKey)) {
+  const weeklyCount = await getWeeklyAcquisitionCount(userId);
+  if (weeklyCount >= MAX_ACQUISITIONS_PER_WEEK) {
     return NextResponse.json(
-      { error: "Invalid package. Must be bronze, silver, or gold." },
+      { error: "You may acquire at most 1 artwork per week from dealers and packages. Try again next week." },
+      { status: 429 },
+    );
+  }
+
+  const body = await req.json();
+  const packageKey = (body.package as string) || "mystery";
+
+  if (!VALID_KEYS.has(packageKey as PackageKey)) {
+    return NextResponse.json(
+      { error: "Invalid package." },
       { status: 400 },
     );
   }

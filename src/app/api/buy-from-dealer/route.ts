@@ -8,8 +8,9 @@ import {
   canAfford,
   adjustCredits,
   executeSaleDb,
+  getWeeklyAcquisitionCount,
 } from "@/lib/db";
-import { dealerAskingPrice, dealerCommissionAmount, sellerNetProceeds, BUYER_PREMIUM_RATE } from "@/lib/types";
+import { dealerAskingPrice, dealerCommissionAmount, sellerNetProceeds, BUYER_PREMIUM_RATE, MAX_ACQUISITIONS_PER_WEEK } from "@/lib/types";
 
 const BuyFromDealerSchema = z.object({
   artwork_id: z.string(),
@@ -20,6 +21,14 @@ export async function POST(request: NextRequest) {
   const userId = await getAuthUserId();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const weeklyCount = await getWeeklyAcquisitionCount(userId);
+  if (weeklyCount >= MAX_ACQUISITIONS_PER_WEEK) {
+    return NextResponse.json(
+      { error: "You may acquire at most 1 artwork per week from dealers and packages. Try again next week." },
+      { status: 429 },
+    );
   }
 
   const body = await request.json();

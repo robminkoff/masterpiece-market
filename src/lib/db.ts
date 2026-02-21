@@ -14,6 +14,7 @@ import type {
 } from "@/lib/types";
 import {
   weeklyCarryCost,
+  tierFromIV,
   STARTING_CREDITS,
   IV_TIER_THRESHOLDS,
   SURPRISE_PACKAGES,
@@ -52,6 +53,26 @@ export async function getArtworksByOwner(ownerId: string): Promise<Artwork[]> {
   return data ?? [];
 }
 
+export async function getUnassignedArtworks(tier?: ArtworkTier): Promise<Artwork[]> {
+  // Get all active ownership artwork_ids
+  const { data: activeOwns, error: ownErr } = await db
+    .from("ownerships")
+    .select("artwork_id")
+    .eq("is_active", true);
+  if (ownErr) throw ownErr;
+
+  const ownedIds = (activeOwns ?? []).map((o) => o.artwork_id);
+
+  let query = db.from("artworks").select("*").eq("status", "active");
+  if (tier) query = query.eq("tier", tier);
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const ownedSet = new Set(ownedIds);
+  return (data ?? []).filter((a) => !ownedSet.has(a.id));
+}
+
 // ──────────────────────────────────────────────
 // Ownerships
 // ──────────────────────────────────────────────
@@ -75,6 +96,18 @@ export async function getOwnershipsByOwner(ownerId: string): Promise<Ownership[]
     .eq("is_active", true);
   if (error) throw error;
   return data ?? [];
+}
+
+export async function getWeeklyAcquisitionCount(userId: string): Promise<number> {
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const { count, error } = await db
+    .from("ownerships")
+    .select("*", { count: "exact", head: true })
+    .eq("owner_id", userId)
+    .gte("acquired_at", weekAgo)
+    .in("acquired_via", ["dealer_purchase", "package_mystery"]);
+  if (error) throw error;
+  return count ?? 0;
 }
 
 export async function getAllActiveOwnerships(): Promise<Ownership[]> {
@@ -374,7 +407,7 @@ export async function generatePackageArtwork(tier: ArtworkTier): Promise<Artwork
     artist: "Unknown",
     year: null,
     medium: "Mixed media",
-    tier,
+    tier: tierFromIV(iv),
     insured_value: iv,
     image_url: null,
     image_url_web: null,
@@ -388,7 +421,7 @@ export async function generatePackageArtwork(tier: ArtworkTier): Promise<Artwork
       },
       {
         heading: "Market Significance",
-        body: `Tier ${tier} artwork with an insured value of ${iv.toLocaleString()} credits. Discovered in a surprise package.`,
+        body: `Insured value of ${iv.toLocaleString()} credits. Discovered in a surprise package.`,
       },
     ],
     source: null,
