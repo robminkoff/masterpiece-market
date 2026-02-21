@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { weeklyCarryCost, IDLE_WEEKS_THRESHOLD, LOAN_PREMIUM_REDUCTION, DEALER_BUY_RATE } from "@/lib/types";
+import { weeklyCarryCost, IDLE_WEEKS_THRESHOLD, LOAN_PREMIUM_REDUCTION, DEALER_BUY_RATE, MUSEUM_FOUNDING_REQUIREMENTS, museumEndowmentRequired } from "@/lib/types";
 import type { EnrichedArtwork, ArtworkTier, Ownership } from "@/lib/types";
 import { ArtFrame } from "@/components/ArtFrame";
 
@@ -25,6 +25,15 @@ const HEALTH_STYLE: Record<HealthStatus, { label: string; bg: string; text: stri
   at_risk: { label: "AT RISK", bg: "bg-red-50 dark:bg-red-950/30",       text: "text-red-700 dark:text-red-400",       bar: "bg-red-500",    dot: "bg-red-500",    border: "border-red-200 dark:border-red-900" },
 };
 
+// ---------- Tier badge styles ----------
+
+const TIER_BADGE: Record<string, { bg: string; text: string }> = {
+  A: { bg: "bg-amber-100 dark:bg-amber-900/40", text: "text-amber-700 dark:text-amber-400" },
+  B: { bg: "bg-stone-100 dark:bg-stone-800/50", text: "text-stone-700 dark:text-stone-400" },
+  C: { bg: "bg-zinc-100 dark:bg-zinc-800/50", text: "text-zinc-700 dark:text-zinc-400" },
+  D: { bg: "bg-slate-100 dark:bg-slate-800/50", text: "text-slate-700 dark:text-slate-400" },
+};
+
 // ---------- Types ----------
 
 interface OwnedRow {
@@ -39,6 +48,7 @@ interface OwnedRow {
   idleWeeks: number;
   onLoan: boolean;
   acquiredAt: string;
+  tags: string[];
 }
 
 interface FeedItem {
@@ -57,6 +67,8 @@ export default function DashboardPage() {
   const [showCreditModal, setShowCreditModal] = useState(false);
   const [showSellModal, setShowSellModal] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [prestige, setPrestige] = useState(0);
+  const [stewardship, setStewardship] = useState(0);
 
   const loadData = useCallback(() => {
     Promise.all([
@@ -66,6 +78,8 @@ export default function DashboardPage() {
     ]).then(([accountData, artData, creditData]) => {
       const userId = accountData.profile?.id;
       setCurrentUserId(userId ?? null);
+      setPrestige(accountData.profile?.prestige ?? 0);
+      setStewardship(accountData.profile?.stewardship ?? 0);
       setCredits(creditData.credits ?? 0);
 
       const artworks = (artData.artworks ?? []) as (EnrichedArtwork & { ownership?: Ownership })[];
@@ -90,6 +104,7 @@ export default function DashboardPage() {
             idleWeeks,
             onLoan,
             acquiredAt: art.owner?.acquired_at ?? "",
+            tags: art.tags ?? [],
           };
         });
 
@@ -158,6 +173,26 @@ export default function DashboardPage() {
   const bestToSell = rows.find((r) => !r.onLoan);
   const bestToLoan = rows.find((r) => !r.onLoan);
   const loanSavings = bestToLoan ? bestToLoan.weeklyCost - bestToLoan.weeklyCostIfLoaned : 0;
+
+  // ---------- Museum progress ----------
+  const tierCounts = { A: 0, B: 0, C: 0, D: 0 };
+  for (const r of rows) if (r.tier in tierCounts) tierCounts[r.tier as keyof typeof tierCounts]++;
+  const uniqueTags = new Set(rows.flatMap((r) => r.tags)).size;
+  const endowmentNeeded = museumEndowmentRequired(
+    rows.map((r) => ({ insured_value: r.iv, tier: r.tier as ArtworkTier, on_loan: r.onLoan, idle_weeks: r.idleWeeks })),
+  );
+  const museumReqs: { label: string; current: number; target: number }[] = [
+    { label: "Tier A artworks", current: tierCounts.A, target: MUSEUM_FOUNDING_REQUIREMENTS.minTierA },
+    { label: "Tier B artworks", current: tierCounts.B, target: MUSEUM_FOUNDING_REQUIREMENTS.minTierB },
+    { label: "Tier C artworks", current: tierCounts.C, target: MUSEUM_FOUNDING_REQUIREMENTS.minTierC },
+    { label: "Tier D artworks", current: tierCounts.D, target: MUSEUM_FOUNDING_REQUIREMENTS.minTierD },
+    { label: "Total artworks", current: rows.length, target: MUSEUM_FOUNDING_REQUIREMENTS.minTotalArtworks },
+    { label: "Tag diversity", current: uniqueTags, target: MUSEUM_FOUNDING_REQUIREMENTS.minTagDiversity },
+    { label: "Prestige", current: prestige, target: MUSEUM_FOUNDING_REQUIREMENTS.minPrestige },
+    { label: "Stewardship", current: stewardship, target: MUSEUM_FOUNDING_REQUIREMENTS.minStewardship },
+    { label: "Endowment", current: credits, target: endowmentNeeded },
+  ];
+  const metCount = museumReqs.filter((r) => r.current >= r.target).length;
 
   // ---------- Top-up handler ----------
   async function handleTopUp(amount: number) {
@@ -303,10 +338,15 @@ export default function DashboardPage() {
                 {rows.map((r) => (
                   <tr key={r.artworkId} className="border-t border-gray-100 dark:border-gray-800">
                     <td className="p-3">
-                      <Link href={`/artworks/${r.artworkId}`} className="font-medium hover:text-[var(--accent-dark)] transition-colors">
-                        {r.title}
-                      </Link>
-                      <p className="text-xs text-gray-400">{r.artist}</p>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${TIER_BADGE[r.tier]?.bg ?? ""} ${TIER_BADGE[r.tier]?.text ?? ""}`}>
+                          {r.tier}
+                        </span>
+                        <Link href={`/artworks/${r.artworkId}`} className="font-medium hover:text-[var(--accent-dark)] transition-colors">
+                          {r.title}
+                        </Link>
+                      </div>
+                      <p className="text-xs text-gray-400 ml-7">{r.artist}</p>
                     </td>
                     <td className="p-3 text-right">
                       <span className="font-semibold">{r.weeklyCost.toLocaleString()} cr</span>
@@ -350,6 +390,89 @@ export default function DashboardPage() {
             </table>
           </div>
         )}
+      </section>
+
+      {/* ========== MUSEUM PROGRESS ========== */}
+      <section className="mt-8">
+        <h2 className="text-lg font-semibold mb-3">Museum Progress</h2>
+        <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-4 space-y-5">
+          {/* Tier frames row */}
+          <div className="grid grid-cols-4 gap-3">
+            {(["A", "B", "C", "D"] as const).map((tier) => {
+              const current = tierCounts[tier];
+              const target = MUSEUM_FOUNDING_REQUIREMENTS[`minTier${tier}` as keyof typeof MUSEUM_FOUNDING_REQUIREMENTS] as number;
+              const met = current >= target;
+              const badge = TIER_BADGE[tier];
+              return (
+                <div key={tier} className="flex flex-col items-center gap-1">
+                  <span className={`text-xs font-semibold ${badge.text}`}>{tier}</span>
+                  <div className={`border-2 px-4 py-3 inline-flex flex-col items-center ${met ? "border-green-400 dark:border-green-600 bg-green-50 dark:bg-green-950/30" : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50"}`}>
+                    <span className={`text-base font-bold leading-none ${met ? "text-green-700 dark:text-green-400" : ""}`}>{current}</span>
+                    <div className={`w-full h-px my-0.5 ${met ? "bg-green-300 dark:bg-green-700" : "bg-gray-300 dark:bg-gray-600"}`} />
+                    <span className="text-xs text-gray-400 leading-none">{target}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Counts row */}
+          <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+            {[
+              { label: "Total artworks", current: rows.length, target: MUSEUM_FOUNDING_REQUIREMENTS.minTotalArtworks },
+              { label: "Tag diversity", current: uniqueTags, target: MUSEUM_FOUNDING_REQUIREMENTS.minTagDiversity },
+            ].map((req) => {
+              const met = req.current >= req.target;
+              return (
+                <div key={req.label} className="flex items-center justify-between py-1">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">{req.label}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">{req.current} / {req.target}</span>
+                    {met ? (
+                      <span className="text-green-600 dark:text-green-400 text-sm">&#10003;</span>
+                    ) : (
+                      <span className="text-gray-300 dark:text-gray-600 text-sm">&#10007;</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Progress bars */}
+          <div className="space-y-3">
+            {[
+              { label: "Prestige", current: prestige, target: MUSEUM_FOUNDING_REQUIREMENTS.minPrestige, fmt: (v: number) => String(v) },
+              { label: "Stewardship", current: stewardship, target: MUSEUM_FOUNDING_REQUIREMENTS.minStewardship, fmt: (v: number) => String(v) },
+              { label: "Endowment", current: credits, target: endowmentNeeded, fmt: (v: number) => `${v.toLocaleString()} cr` },
+            ].map((req) => {
+              const met = req.current >= req.target;
+              const pct = req.target > 0 ? Math.min(100, (req.current / req.target) * 100) : 0;
+              return (
+                <div key={req.label}>
+                  <div className="flex items-center justify-between text-sm mb-1">
+                    <span className="text-gray-600 dark:text-gray-400">{req.label}</span>
+                    <span className="font-medium">
+                      {req.fmt(req.current)} / {req.fmt(req.target)}
+                      {met && <span className="text-green-600 dark:text-green-400 ml-1.5">&#10003;</span>}
+                    </span>
+                  </div>
+                  <div className="h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${met ? "bg-green-500" : "bg-[var(--accent)]"}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Summary */}
+          <div className="pt-3 border-t border-gray-100 dark:border-gray-800 text-sm text-gray-500">
+            {metCount} of {museumReqs.length} requirements met
+          </div>
+        </div>
       </section>
 
       {/* ========== ACTIVITY FEED ========== */}

@@ -125,7 +125,7 @@ Missing the cadence triggers a prestige penalty and, if repeated, probation.
 
 ### 3. Collection Maintenance
 
-The founder must continue to own the minimum collection breadth required for founding (1A + 2B + 3C + 2D). Selling below the threshold triggers a warning and a 4-week grace period to reacquire.
+The founder must continue to own the minimum collection breadth required for founding (1A + 1B + 2C + 2D). Selling below the threshold triggers a warning and a 4-week grace period to reacquire.
 
 ---
 
@@ -194,7 +194,7 @@ This keeps revenue proportional to effort and investment.
 
 | Parameter | Value |
 |-----------|-------|
-| Min collection to found | 1A + 2B + 3C + 2D (8 total) |
+| Min collection to found | 1A + 1B + 2C + 2D (6 total) |
 | Min tag diversity | 5 distinct tags |
 | Stewardship score required | 25+ |
 | Prestige score required | 50+ |

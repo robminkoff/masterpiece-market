@@ -158,10 +158,10 @@ export const DEFAULT_STRATEGY: StrategyConfig = {
 
 export const DEFAULT_MUSEUM: MuseumConfig = {
   minA: 1,
-  minB: 2,
-  minC: 3,
+  minB: 1,
+  minC: 2,
   minD: 2,
-  minTotal: 8,
+  minTotal: 6,
   minTagDiversity: 5,
   endowmentWeeks: 12,
 };

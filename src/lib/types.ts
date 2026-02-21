@@ -221,10 +221,10 @@ export type MuseumMembershipTier = "visitor" | "patron" | "benefactor";
 
 export const MUSEUM_FOUNDING_REQUIREMENTS = {
   minTierA: 1,
-  minTierB: 2,
-  minTierC: 3,
+  minTierB: 1,
+  minTierC: 2,
   minTierD: 2,
-  minTotalArtworks: 8,
+  minTotalArtworks: 6,
   minTagDiversity: 5,
   minStewardship: 25,
   minPrestige: 50,
