@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Auction } from "@/lib/types";
-import { TIER_CONFIG } from "@/lib/types";
 import { ArtFrame } from "@/components/ArtFrame";
 
 const STATUS_BADGES: Record<string, string> = {
@@ -77,7 +76,6 @@ function AuctionCard({ auction }: { auction: Auction }) {
   const title = art?.title ?? "Unknown Artwork";
   const artist = art?.artist ?? "";
   const tier = art?.tier ?? "D";
-  const cfg = TIER_CONFIG[tier];
 
   return (
     <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
@@ -95,7 +93,7 @@ function AuctionCard({ auction }: { auction: Auction }) {
       <div className="p-4">
         <div className="flex items-center justify-between mb-2">
           <span className={`text-xs font-semibold px-2 py-0.5 rounded ${badge}`}>{auction.status}</span>
-          <span className="text-xs text-gray-400 font-medium">T{tier} {cfg.label}</span>
+          <span className="text-xs text-gray-400 font-medium">Tier {tier}</span>
         </div>
         <h3 className="font-semibold">{title}</h3>
         <p className="text-sm text-gray-500">{artist}{art?.year ? `, ${art.year}` : ""}</p>

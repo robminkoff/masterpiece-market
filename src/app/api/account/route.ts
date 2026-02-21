@@ -4,6 +4,7 @@ import {
   getProfile,
   updateProfile,
   getOwnershipsByOwner,
+  getUnassignedArtworks,
   generatePackageArtwork,
   adjustCredits,
 } from "@/lib/db";
@@ -65,12 +66,22 @@ export async function POST(req: Request) {
     display_name: display_name.trim(),
   });
 
-  // Gift a generated D-tier artwork on first profile setup (idempotent)
+  // Gift a real D-tier artwork on first profile setup (idempotent)
+  // Tries unassigned pool first, falls back to generated placeholder
   let giftedArtworkId: string | null = null;
   try {
     const existing = await getOwnershipsByOwner(userId);
     if (existing.length === 0) {
-      const artwork = await generatePackageArtwork("D");
+      // Try to pick a real unassigned D-tier artwork
+      const unassigned = await getUnassignedArtworks("D");
+      let artwork;
+      if (unassigned.length > 0) {
+        artwork = unassigned[Math.floor(Math.random() * unassigned.length)];
+      } else {
+        // Fallback: generate a placeholder artwork
+        artwork = await generatePackageArtwork("D");
+      }
+
       const ownId = `own-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
       const { error: ownErr } = await supabaseAdmin.from("ownerships").insert({
         id: ownId,

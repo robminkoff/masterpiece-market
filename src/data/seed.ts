@@ -2,19 +2,21 @@
 // Used by API route stubs and can be adapted into a real DB seed script.
 
 import type { Artwork, Auction, GalleryNoteSection, Museum, MuseumExhibition, Npc, Ownership, ProvenanceEvent } from "@/lib/types";
+import { tierFromIV } from "@/lib/types";
 
 export const DEMO_COLLECTOR_ID = "00000000-0000-0000-0000-000000000099";
 
 /** Helper: fill acquisition fields with defaults for legacy seed data */
 function art(base: {
   id: string; title: string; artist: string; year: number | null;
-  medium: string | null; tier: import("@/lib/types").ArtworkTier;
+  medium: string | null;
   insured_value: number; image_url: string | null; tags: string[];
   description: string | null; created_at: string;
   gallery_notes?: GalleryNoteSection[];
 }): Artwork {
   return {
     ...base,
+    tier: tierFromIV(base.insured_value),
     gallery_notes: base.gallery_notes ?? [],
     image_url_web: base.image_url,
     image_url_thumb: base.image_url,
@@ -38,7 +40,7 @@ function art(base: {
 // Every new artwork MUST include a `gallery_notes` array with 2–3 sections.
 //
 //   Required section:
-//     "Market Significance" — explains the artwork's tier and IV in gameplay
+//     "Market Significance" — explains the artwork's IV and market dynamics in gameplay
 //     terms (carry cost, curator demand, niche appeal, scarcity, etc.)
 //
 //   Pick 1–2 additional sections from:
@@ -51,14 +53,12 @@ function art(base: {
 //
 // ─────────────────────────────────────────────────────────────
 export const SEED_ARTWORKS: Artwork[] = [
-  // --- Tier A: IV ≥ 350k ---
   art({
     id: "art-001",
     title: "Mona Lisa",
     artist: "Leonardo da Vinci",
     year: 1503,
     medium: "Oil on poplar panel",
-    tier: "A",
     insured_value: 1_000_000,
     image_url: "/artworks/art-001.jpg",
     tags: ["renaissance", "portrait", "iconic"],
@@ -76,7 +76,6 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Vincent van Gogh",
     year: 1889,
     medium: "Oil on canvas",
-    tier: "A",
     insured_value: 600_000,
     image_url: "/artworks/art-002.jpg",
     tags: ["post-impressionism", "landscape", "iconic"],
@@ -94,7 +93,6 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Johannes Vermeer",
     year: 1665,
     medium: "Oil on canvas",
-    tier: "A",
     insured_value: 450_000,
     image_url: "/artworks/art-003.jpg",
     tags: ["baroque", "portrait", "dutch-golden-age"],
@@ -102,19 +100,17 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "A tronie—a character study rather than a commissioned portrait—the identity of the sitter remains unknown. The painting was virtually forgotten until its rediscovery in the late 19th century." },
       { heading: "Technique", body: "Vermeer built the luminous pearl with just two strokes of lead white over dark underpainting. The turban's ultramarine pigment, ground from lapis lazuli, was more expensive than gold by weight." },
-      { heading: "Market Significance", body: "Tier A IV reflects its status as an exhibition centerpiece. Curators across multiple taste profiles request it, and its compact composition reproduces well in promotional materials, boosting exhibition visitor counts." },
+      { heading: "Market Significance", body: "An iconic work and perennial exhibition centerpiece. Curators across multiple taste profiles request it, and its compact composition reproduces well in promotional materials, boosting exhibition visitor counts. High IV means significant carry, but reliable loan demand offsets the cost." },
     ],
     created_at: new Date().toISOString(),
   }),
 
-  // --- Tier B: 75k–350k ---
   art({
     id: "art-004",
     title: "The Great Wave off Kanagawa",
     artist: "Katsushika Hokusai",
     year: 1831,
     medium: "Woodblock",
-    tier: "B",
     insured_value: 200_000,
     image_url: "/artworks/art-004.jpg",
     tags: ["ukiyo-e", "landscape", "japanese"],
@@ -122,7 +118,7 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Part of the series Thirty-six Views of Mount Fuji, published when Hokusai was about seventy. The print's composition influenced the French Impressionists after Japan opened to Western trade in the 1850s." },
       { heading: "Technique", body: "Carved on cherry-wood blocks and printed with imported Prussian blue—a synthetic pigment new to Japan—that gave the wave its distinctive deep hue. Thousands of impressions were pulled, making it a multiple rather than a unique work." },
-      { heading: "Market Significance", body: "Tier B IV reflects the tension between extreme recognition and the existence of multiple impressions. Crossover appeal to both Japanese-art specialists and general curators keeps loan demand solid." },
+      { heading: "Market Significance", body: "Extreme recognition balanced against the existence of multiple impressions. Crossover appeal to both Japanese-art specialists and general curators keeps loan demand solid." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -132,7 +128,6 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Henri Rousseau",
     year: 1910,
     medium: "Oil on canvas",
-    tier: "B",
     insured_value: 250_000,
     image_url: "/artworks/art-005.jpg",
     tags: ["post-impressionism", "jungle", "dreamlike"],
@@ -140,7 +135,7 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Completed the year of Rousseau's death, The Dream is his largest canvas and the culmination of a self-taught career. He never visited a jungle; his lush vegetation was invented from visits to the Jardin des Plantes." },
       { heading: "Cultural Impact", body: "The painting anticipated Surrealism by over a decade. André Breton and the Surrealists later claimed Rousseau as a spiritual predecessor, cementing the work's place in the avant-garde canon." },
-      { heading: "Market Significance", body: "Strong IV for Tier B, but its niche appeal—proto-Surrealism attracts fewer curator taste profiles—limits broad loan demand compared to more universally recognized works at this tier." },
+      { heading: "Market Significance", body: "Strong IV, but its niche appeal—proto-Surrealism attracts fewer curator taste profiles—limits broad loan demand compared to more universally recognized works at similar price points." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -150,7 +145,6 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Georges Seurat",
     year: 1886,
     medium: "Oil on canvas",
-    tier: "B",
     insured_value: 180_000,
     image_url: "/artworks/art-006.jpg",
     tags: ["pointillism", "landscape", "impressionism"],
@@ -158,7 +152,7 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Seurat spent two years on the canvas, producing over sixty preparatory oil studies and drawings. It debuted at the final Impressionist exhibition in 1886 and immediately divided critics." },
       { heading: "Technique", body: "Painted entirely in small dots of pure color—Pointillism—designed to blend optically at viewing distance. Seurat applied the dots with near-mechanical precision, treating painting as applied color science." },
-      { heading: "Market Significance", body: "Tier B IV reflects strong academic and institutional appeal. Curators with conceptual or historical taste profiles value it highly, though its monumental scale narrative limits casual collector interest." },
+      { heading: "Market Significance", body: "Strong academic and institutional appeal drives curator interest. Conceptual or historical taste profiles value it highly, though its monumental scale limits casual collector interest." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -168,7 +162,6 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Sandro Botticelli",
     year: 1485,
     medium: "Tempera on canvas",
-    tier: "B",
     insured_value: 300_000,
     image_url: "/artworks/art-007.jpg",
     tags: ["renaissance", "mythology", "iconic"],
@@ -176,7 +169,7 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Likely commissioned by Lorenzo di Pierfrancesco de' Medici for his Villa di Castello. The subject draws on Poliziano's verse retelling of the Homeric Hymn, reflecting the Medici circle's revival of classical mythology." },
       { heading: "Cultural Impact", body: "The painting established the canonical image of idealized female beauty in Western art. Its composition has been referenced continuously for five centuries, from academic painting to contemporary advertising." },
-      { heading: "Market Significance", body: "At 300k IV, it sits near the top of Tier B and approaches Tier A demand. Curators of nearly every taste profile recognize its draw power, making it one of the safest holds at this price point." },
+      { heading: "Market Significance", body: "At 300k IV, carry costs are significant but offset by near-universal curator demand. Curators of nearly every taste profile recognize its draw power, making it one of the safest holds at this price point." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -186,7 +179,6 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Grant Wood",
     year: 1930,
     medium: "Oil on beaverboard",
-    tier: "B",
     insured_value: 160_000,
     image_url: "/artworks/art-008.jpg",
     tags: ["american", "portrait", "regionalism"],
@@ -194,19 +186,17 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Wood spotted a small house with a Gothic window in Eldon, Iowa and imagined the kind of people who might live there. His sister and his dentist served as models for the pair." },
       { heading: "Cultural Impact", body: "The most parodied painting in American culture, appearing in editorial cartoons, advertisements, and film. It defined—and arguably satirized—the image of rural American stoicism." },
-      { heading: "Market Significance", body: "Tier B IV reflects strong domestic recognition, but its specifically American identity limits international curator demand. Best paired with other American works for thematic exhibitions." },
+      { heading: "Market Significance", body: "Strong domestic recognition, but its specifically American identity limits international curator demand. Best paired with other American works for thematic exhibitions." },
     ],
     created_at: new Date().toISOString(),
   }),
 
-  // --- Tier B: 75k–350k ---
   art({
     id: "art-009",
     title: "Nighthawks",
     artist: "Edward Hopper",
     year: 1942,
     medium: "Oil on canvas",
-    tier: "B",
     insured_value: 75_000,
     image_url: "/artworks/art-009.jpg",
     tags: ["american", "urban", "realism"],
@@ -214,7 +204,7 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Completed weeks after the attack on Pearl Harbor, the painting captures wartime urban anxiety. Hopper denied a direct connection, but the empty street and sealed interior resonated with a nation on edge." },
       { heading: "Technique", body: "The diner has no visible entrance, trapping the figures inside a fluorescent-lit stage. Hopper's cinematic framing—wide angle, sharp diagonals, flattened depth—anticipated film noir composition." },
-      { heading: "Market Significance", body: "At the floor of Tier B, carry costs are manageable. Its noir-niche appeal attracts curators with urban or American specialties but limits broader placement compared to higher-IV works." },
+      { heading: "Market Significance", body: "At this IV, carry costs are manageable. Its noir-niche appeal attracts curators with urban or American specialties but limits broader placement compared to higher-IV works." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -224,7 +214,6 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Gustav Klimt",
     year: 1908,
     medium: "Oil and gold leaf on canvas",
-    tier: "B",
     insured_value: 80_000,
     image_url: "/artworks/art-010.jpg",
     tags: ["art-nouveau", "romantic", "gold"],
@@ -232,18 +221,16 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Painted during Klimt's Golden Phase, The Kiss is widely believed to depict Klimt and his companion Emilie Flöge. The Austrian state purchased it directly from exhibition in 1908." },
       { heading: "Technique", body: "Gold leaf is applied over oil paint, with the male figure's robe decorated in rectilinear blocks and the female's in circular floral motifs—gendered geometry that echoes Byzantine mosaics." },
-      { heading: "Market Significance", body: "Poster and merchandise ubiquity suppresses prestige relative to its recognition. IV sits at the low end of Tier B; curators may hesitate to feature an image audiences associate more with gift shops than galleries." },
+      { heading: "Market Significance", body: "Poster and merchandise ubiquity suppresses prestige relative to its recognition. At this IV, curators may hesitate to feature an image audiences associate more with gift shops than galleries." },
     ],
     created_at: new Date().toISOString(),
   }),
-  // --- Tier C: 50k–75k ---
   art({
     id: "art-011",
     title: "Water Lilies (Nymphéas)",
     artist: "Claude Monet",
     year: 1906,
     medium: "Oil on canvas",
-    tier: "C",
     insured_value: 55_000,
     image_url: "/artworks/art-011.jpg",
     tags: ["impressionism", "landscape", "nature"],
@@ -251,7 +238,7 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Monet produced approximately 250 Water Lilies canvases over the last thirty years of his life, many while suffering from cataracts that shifted his color perception. This particular canvas dates to the middle of the series." },
       { heading: "Technique", body: "The composition eliminates the horizon line entirely, presenting the pond surface as an all-over field. This proto-abstract approach anticipated the large-scale color-field painting of the mid-20th century." },
-      { heading: "Market Significance", body: "Tier C IV reflects the series' sheer volume—roughly 250 canvases dilute individual scarcity. Demand is steady but unexceptional; curators treat Water Lilies as reliable filler rather than exhibition anchors." },
+      { heading: "Market Significance", body: "The series' sheer volume—roughly 250 canvases—dilutes individual scarcity, keeping the IV modest. Demand is steady but unexceptional; curators treat Water Lilies as reliable filler rather than exhibition anchors." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -261,15 +248,14 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Edvard Munch",
     year: 1893,
     medium: "Tempera and crayon on cardboard",
-    tier: "C",
     insured_value: 65_000,
     image_url: "/artworks/art-012.jpg",
     tags: ["expressionism", "iconic", "anxiety"],
     description: "Agonized figure against a tumultuous sky. Symbol of modern existential angst.",
     gallery_notes: [
       { heading: "Historical Context", body: "Munch described an anxiety attack on a walk at sunset as the inspiration. The image was stolen twice—from the National Gallery in 1994 and the Munch Museum in 2004—both times recovered." },
-      { heading: "Cultural Impact", body: "The figure's open mouth has become the universal icon of anxiety, reproduced on everything from emoji to inflatable toys. Its cultural penetration far exceeds that of most Tier A works." },
-      { heading: "Market Significance", body: "Four distinct versions by Munch (two paintings, a lithograph, and a pastel) limit valuation of any single piece. Tier C IV reflects this multiplicity despite near-universal name recognition." },
+      { heading: "Cultural Impact", body: "The figure's open mouth has become the universal icon of anxiety, reproduced on everything from emoji to inflatable toys. Its cultural penetration far exceeds that of most higher-IV works." },
+      { heading: "Market Significance", body: "Four distinct versions by Munch (two paintings, a lithograph, and a pastel) limit valuation of any single piece, keeping the IV moderate despite near-universal name recognition." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -279,7 +265,6 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Eugène Delacroix",
     year: 1830,
     medium: "Oil on canvas",
-    tier: "B",
     insured_value: 90_000,
     image_url: "/artworks/art-013.jpg",
     tags: ["romanticism", "political", "iconic"],
@@ -287,7 +272,7 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Painted in the autumn of 1830 to commemorate the July Revolution that toppled Charles X. Delacroix, though not a barricade fighter himself, witnessed the uprising from the streets of Paris." },
       { heading: "Cultural Impact", body: "The painting established the visual template for revolutionary imagery, directly inspiring the Statue of Liberty and countless political posters. It remains France's most reproduced political painting." },
-      { heading: "Market Significance", body: "Tier B IV with strong appeal to curators specializing in political and historical themes. Its overtly political subject limits placement in purely aesthetic exhibitions but anchors any revolution-themed show." },
+      { heading: "Market Significance", body: "At this IV, carry costs are moderate with strong appeal to curators specializing in political and historical themes. Its overtly political subject limits placement in purely aesthetic exhibitions but anchors any revolution-themed show." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -297,7 +282,6 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Vincent van Gogh",
     year: 1889,
     medium: "Oil on canvas",
-    tier: "C",
     insured_value: 50_000,
     image_url: "/artworks/art-014.jpg",
     tags: ["post-impressionism", "portrait", "self-portrait"],
@@ -305,19 +289,17 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Painted in January 1889, weeks after Van Gogh severed part of his left ear following a confrontation with Gauguin. The bandage covers the right ear because Van Gogh worked from a mirror." },
       { heading: "Technique", body: "The mirror-reversed composition places a ukiyo-e print in the background, signaling Van Gogh's deep engagement with Japanese aesthetics. Flat planes of color and bold outlines reflect that influence." },
-      { heading: "Market Significance", body: "Tier C IV reflects Van Gogh's prolific self-portrait output—over thirty survive—which tempers individual scarcity. Strong narrative appeal draws curators, but supply keeps the valuation moderate." },
+      { heading: "Market Significance", body: "Van Gogh's prolific self-portrait output—over thirty survive—tempers individual scarcity, keeping the IV moderate. Strong narrative appeal draws curators, but supply keeps the valuation in check." },
     ],
     created_at: new Date().toISOString(),
   }),
 
-  // --- Tier D: IV < 50k ---
   art({
     id: "art-015",
     title: "Composition II in Red, Blue, and Yellow",
     artist: "Piet Mondrian",
     year: 1930,
     medium: "Oil on canvas",
-    tier: "D",
     insured_value: 35_000,
     image_url: "/artworks/art-015.jpg",
     tags: ["de-stijl", "abstract", "geometric"],
@@ -325,7 +307,7 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Created in Paris in 1930 as part of Mondrian's Neo-Plasticism program, which sought to reduce painting to its essential elements: horizontal and vertical lines with primary colors." },
       { heading: "Technique", body: "Mondrian obsessively adjusted line positions over weeks, scraping and repainting until the asymmetric balance felt resolved. X-ray analysis reveals multiple prior configurations beneath the surface." },
-      { heading: "Market Significance", body: "Highest IV in Tier D, reflecting the niche appeal of pure geometric abstraction. Affordable entry point with modest carry. Pairs well with Kandinsky for dedicated abstract exhibitions." },
+      { heading: "Market Significance", body: "Highest IV among affordable works, reflecting the niche appeal of pure geometric abstraction. Modest carry costs make it an accessible entry point. Pairs well with Kandinsky for dedicated abstract exhibitions." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -335,7 +317,6 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Wassily Kandinsky",
     year: 1923,
     medium: "Oil on canvas",
-    tier: "D",
     insured_value: 25_000,
     image_url: "/artworks/art-016.jpg",
     tags: ["abstract", "geometric", "bauhaus"],
@@ -343,7 +324,7 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Painted during Kandinsky's first year teaching at the Bauhaus in Weimar. The shift from earlier expressionist abstraction to crisp geometric forms marks the beginning of his mature analytical period." },
       { heading: "Technique", body: "Kandinsky mapped shapes to spiritual concepts—circles as cosmic, triangles as aggressive—composing the canvas like a musical score. The precise geometry was drafted with compass and ruler before painting." },
-      { heading: "Market Significance", body: "Mid-range Tier D with manageable carry, useful as a complement to Mondrian for abstract-themed shows. Curators with design or Bauhaus specialties provide occasional loan demand." },
+      { heading: "Market Significance", body: "Affordable IV with manageable carry, useful as a complement to Mondrian for abstract-themed shows. Curators with design or Bauhaus specialties provide occasional loan demand." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -353,7 +334,6 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Albrecht Dürer",
     year: 1514,
     medium: "Engraving",
-    tier: "D",
     insured_value: 22_000,
     image_url: "/artworks/art-017.jpg",
     tags: ["renaissance", "engraving", "allegorical"],
@@ -361,7 +341,7 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "One of Dürer's three Master Prints alongside Knight, Death and the Devil and Saint Jerome in His Study. The magic square in the upper right and scattered geometric solids have generated five centuries of scholarly analysis." },
       { heading: "Cultural Impact", body: "The engraving established melancholy as a subject worthy of intellectual respect, linking creative genius with depressive temperament. It remains the most analyzed print in Western art history." },
-      { heading: "Market Significance", body: "As an engraving, multiple impressions exist, capping individual value at Tier D. Its scholarly mystique specifically attracts The Archivist, making it a strategic hold for players pursuing that legendary curator." },
+      { heading: "Market Significance", body: "As an engraving, multiple impressions exist, keeping the IV modest. Its scholarly mystique specifically attracts The Archivist, making it a strategic hold for players pursuing that legendary curator." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -371,7 +351,6 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Katsushika Hokusai",
     year: 1831,
     medium: "Woodblock",
-    tier: "D",
     insured_value: 28_000,
     image_url: "/artworks/art-018.jpg",
     tags: ["ukiyo-e", "landscape", "japanese"],
@@ -379,7 +358,7 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "The second most famous print from Hokusai's Thirty-six Views of Mount Fuji series, depicting the mountain flushed red by the light of dawn in late summer. It is sometimes called Red Fuji." },
       { heading: "Technique", body: "The composition is strikingly minimal—mountain, sky, and a fringe of trees with almost no detail. The dawn-red coloring was achieved through multiple overprinted woodblock passes." },
-      { heading: "Market Significance", body: "Tier D as a woodblock multiple. Functions as a companion piece to The Great Wave (art-004); holding both creates thematic pairing opportunities that curators of Japanese art value." },
+      { heading: "Market Significance", body: "A woodblock multiple with modest IV. Functions as a companion piece to The Great Wave (art-004); holding both creates thematic pairing opportunities that curators of Japanese art value." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -389,7 +368,6 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Leonardo da Vinci",
     year: 1490,
     medium: "Pen, ink, and metalpoint on paper",
-    tier: "D",
     insured_value: 15_000,
     image_url: "/artworks/art-019.jpg",
     tags: ["renaissance", "anatomy", "drawing"],
@@ -407,7 +385,6 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Vincent van Gogh",
     year: 1888,
     medium: "Oil on canvas",
-    tier: "D",
     insured_value: 18_000,
     image_url: "/artworks/art-020.jpg",
     tags: ["post-impressionism", "landscape", "nocturne"],
@@ -415,21 +392,19 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Painted outdoors on the banks of the Rhône in Arles in September 1888, months before the more famous Starry Night. Van Gogh was experimenting with painting night scenes under actual starlight and gaslight." },
       { heading: "Technique", body: "Chrome yellow gaslamp reflections juxtaposed against ultramarine sky and water create a vibrating complementary-color effect. The paint application is looser and more spontaneous than the later Saint-Rémy canvas." },
-      { heading: "Market Significance", body: "Tier D IV reflects being perpetually overshadowed by its more famous sibling (art-002). Nocturne-niche curators appreciate it, but general audiences and most curators reach for The Starry Night first." },
+      { heading: "Market Significance", body: "Perpetually overshadowed by its more famous sibling (art-002), this nocturne sits at a low IV. Niche curators appreciate it, but general audiences and most curators reach for The Starry Night first." },
     ],
     created_at: new Date().toISOString(),
   }),
 
   // --- Drop 2: 20 more artworks ---
 
-  // Tier A
   art({
     id: "art-021",
     title: "The Night Watch",
     artist: "Rembrandt van Rijn",
     year: 1642,
     medium: "Oil on canvas",
-    tier: "A",
     insured_value: 550_000,
     image_url: "/artworks/art-021.jpg",
     tags: ["baroque", "group-portrait", "dutch-golden-age"],
@@ -437,7 +412,7 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Commissioned by the civic militia for their new hall, the painting was radical for depicting a group portrait as a dynamic action scene. It hung in the Amsterdam town hall for over a century before entering the Rijksmuseum." },
       { heading: "Technique", body: "Rembrandt used extreme chiaroscuro to spotlight the captain and lieutenant while two dozen other figures emerge from deep shadow. The canvas was trimmed on all four sides in 1715 to fit between columns." },
-      { heading: "Market Significance", body: "Tier A IV reflects its status as the crown jewel of the Dutch Golden Age. Curators with historical and baroque profiles compete for loan access, making carry costs manageable for active stewards." },
+      { heading: "Market Significance", body: "The crown jewel of the Dutch Golden Age, commanding high IV and significant carry. Curators with historical and baroque profiles compete for loan access, making costs manageable for active stewards." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -447,7 +422,6 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Hieronymus Bosch",
     year: 1505,
     medium: "Oil on oak panels",
-    tier: "A",
     insured_value: 500_000,
     image_url: "/artworks/art-022.jpg",
     tags: ["northern-renaissance", "triptych", "flemish", "surreal"],
@@ -455,19 +429,17 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Created for the Nassau family of Brussels, the triptych entered the Spanish royal collection and has been at the Prado since 1939. Its meaning remains fiercely debated—morality tale, alchemical allegory, or heretical vision." },
       { heading: "Technique", body: "The three panels unfold from a grisaille exterior globe. Bosch populated the interior with hundreds of hybrid creatures, impossible architecture, and surreal vignettes rendered in meticulous miniaturist detail." },
-      { heading: "Market Significance", body: "Tier A IV reflects its art-historical gravity and universal curator demand. The triptych format and density of detail generate exceptionally long viewer dwell times at exhibitions." },
+      { heading: "Market Significance", body: "Art-historical gravity and universal curator demand justify the high IV. The triptych format and density of detail generate exceptionally long viewer dwell times at exhibitions." },
     ],
     created_at: new Date().toISOString(),
   }),
 
-  // Tier B
   art({
     id: "art-023",
     title: "Nighthawks",
     artist: "Edward Hopper",
     year: 1942,
     medium: "Oil on canvas",
-    tier: "B",
     insured_value: 280_000,
     image_url: "/artworks/art-023.jpg",
     tags: ["american", "urban", "realism"],
@@ -475,7 +447,7 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Painted weeks after Pearl Harbor, the empty street and fluorescent-lit interior have been read as wartime anxiety. Hopper denied any symbolic intent, citing a restaurant on Greenwich Avenue as his inspiration." },
       { heading: "Technique", body: "The diner has no visible door—viewers cannot enter the scene. Hopper used an almost cinematic wide-angle perspective, flooding the interior with greenish fluorescent light against the dark brownstone exterior." },
-      { heading: "Market Significance", body: "Tier B reflects broad American-art curator demand and pop-culture recognition. The no-door motif makes it a perennial discussion piece, boosting exhibition visitor engagement." },
+      { heading: "Market Significance", body: "Broad American-art curator demand and pop-culture recognition support steady loan interest. The no-door motif makes it a perennial discussion piece, boosting exhibition visitor engagement." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -485,7 +457,6 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Gustav Klimt",
     year: 1908,
     medium: "Oil and gold leaf on canvas",
-    tier: "B",
     insured_value: 320_000,
     image_url: "/artworks/art-024.jpg",
     tags: ["art-nouveau", "portrait", "iconic"],
@@ -493,7 +464,7 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Painted during Klimt's 'Golden Phase,' the work was purchased by the Austrian state before it was finished. It has remained at the Belvedere in Vienna for over a century." },
       { heading: "Technique", body: "Real gold leaf is applied over oil paint in geometric patterns inspired by Byzantine mosaics and Ravenna's church interiors. The contrast between naturalistic faces and flat decorative robes creates a dreamlike tension." },
-      { heading: "Market Significance", body: "Strong Tier B IV driven by universal romantic appeal. Curators across all taste profiles request it, and its gold-leaf surface photographs dramatically, boosting exhibition marketing materials." },
+      { heading: "Market Significance", body: "Strong IV driven by universal romantic appeal. Curators across all taste profiles request it, and its gold-leaf surface photographs dramatically, boosting exhibition marketing materials." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -503,7 +474,6 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Caspar David Friedrich",
     year: 1818,
     medium: "Oil on canvas",
-    tier: "B",
     insured_value: 200_000,
     image_url: "/artworks/art-025.jpg",
     tags: ["romanticism", "landscape", "german"],
@@ -511,7 +481,7 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Friedrich painted this in Dresden shortly after the Napoleonic Wars. The figure's identity is debated—possibly a Saxon officer or a composite ideal. The painting hung in private collections until entering the Hamburger Kunsthalle." },
       { heading: "Cultural Impact", body: "The most reproduced image of European Romanticism, used on countless book covers, film posters, and album art. The Rückenfigur—figure seen from behind—became Friedrich's signature device." },
-      { heading: "Market Significance", body: "Tier B IV reflects strong recognition and Romantic-landscape curator demand. Its compact composition and lone-figure motif make it versatile for exhibitions across multiple themes." },
+      { heading: "Market Significance", body: "Strong recognition and Romantic-landscape curator demand keep loan placement reliable. Its compact composition and lone-figure motif make it versatile for exhibitions across multiple themes." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -521,7 +491,6 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Eugène Delacroix",
     year: 1830,
     medium: "Oil on canvas",
-    tier: "B",
     insured_value: 260_000,
     image_url: "/artworks/art-026.jpg",
     tags: ["romanticism", "historical", "french"],
@@ -529,7 +498,7 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Painted within months of the July Revolution of 1830, which toppled Charles X. Delacroix witnessed the street fighting and combined reportage with classical allegory. The French state purchased it in 1831." },
       { heading: "Technique", body: "Delacroix used a pyramidal composition anchored by Liberty's raised tricolor. Smoke, debris, and bodies create depth while the palette shifts from cool shadows to warm sunlight on the central figures." },
-      { heading: "Market Significance", body: "Tier B IV reflects political-history appeal and French institutional prestige. Curators with historical profiles consistently request it, though its revolutionary subject narrows some private-exhibition opportunities." },
+      { heading: "Market Significance", body: "Political-history appeal and French institutional prestige drive curator interest. Historical profiles consistently request it, though its revolutionary subject narrows some private-exhibition opportunities." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -539,7 +508,6 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Claude Monet",
     year: 1906,
     medium: "Oil on canvas",
-    tier: "B",
     insured_value: 240_000,
     image_url: "/artworks/art-027.jpg",
     tags: ["impressionism", "landscape", "series"],
@@ -547,19 +515,17 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Monet spent the last thirty years of his life painting his water garden at Giverny. This canvas is from the middle period of the series, before the monumental late murals now at the Orangerie." },
       { heading: "Technique", body: "No horizon line or sky—only the pond surface, reflections, and floating lilies. Monet's broken brushwork dissolves form into pure color, anticipating abstract painting by decades." },
-      { heading: "Market Significance", body: "Tier B IV reflects the series' massive supply (250+ canvases) balanced against Monet's universal name recognition. Impressionism curators always want one, making loan placement reliable." },
+      { heading: "Market Significance", body: "The series' massive supply (250+ canvases) tempers individual value, while Monet's universal name recognition ensures demand. Impressionism curators always want one, making loan placement reliable." },
     ],
     created_at: new Date().toISOString(),
   }),
 
-  // Tier C
   art({
     id: "art-028",
     title: "The Scream",
     artist: "Edvard Munch",
     year: 1893,
     medium: "Tempera and crayon on cardboard",
-    tier: "C",
     insured_value: 65_000,
     image_url: "/artworks/art-028.jpg",
     tags: ["expressionism", "iconic", "norwegian"],
@@ -567,7 +533,7 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Munch created four versions between 1893 and 1910. This tempera-on-cardboard version is the earliest. Munch described the inspiration as a walk at sunset where 'the sky turned blood red' and he felt 'an infinite scream passing through nature.'" },
       { heading: "Cultural Impact", body: "The wavy figure has become a universal emoji of anxiety, appearing on everything from inflatable toys to the Apple emoji keyboard. Its fame as a meme paradoxically diminishes its perceived market seriousness." },
-      { heading: "Market Significance", body: "Tier C IV reflects the tension between extreme pop-culture recognition and the work's fragile cardboard support, which limits exhibition loans and insurance terms." },
+      { heading: "Market Significance", body: "Extreme pop-culture recognition balanced against the work's fragile cardboard support, which limits exhibition loans and insurance terms, keeping the IV moderate." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -577,14 +543,13 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "James McNeill Whistler",
     year: 1871,
     medium: "Oil on canvas",
-    tier: "C",
     insured_value: 55_000,
     image_url: "/artworks/art-029.jpg",
     tags: ["realism", "portrait", "american"],
     description: "Whistler's mother seated in profile. One of the most parodied paintings in American art.",
     gallery_notes: [
       { heading: "Historical Context", body: "Whistler insisted the painting was a formal exercise in tonal harmony, not a sentimental portrait. The title emphasizes color arrangement over subject matter—a radical idea in 1871." },
-      { heading: "Market Significance", body: "Tier C IV reflects its fame as a cultural icon versus limited curator demand outside American-art specialists. Heavy parody exposure has dulled its critical cachet." },
+      { heading: "Market Significance", body: "Famous as a cultural icon but limited curator demand outside American-art specialists. Heavy parody exposure has dulled its critical cachet, keeping the IV moderate." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -594,7 +559,6 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Henri Rousseau",
     year: 1897,
     medium: "Oil on canvas",
-    tier: "C",
     insured_value: 60_000,
     image_url: "/artworks/art-030.jpg",
     tags: ["post-impressionism", "dreamlike", "nocturne"],
@@ -602,7 +566,7 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Rousseau offered the painting to his hometown of Laval, which declined it. It was rediscovered by the art dealer Daniel-Henry Kahnweiler and entered MoMA's collection in 1939." },
       { heading: "Technique", body: "Rousseau's self-taught flatness—no atmospheric perspective, uniform sharpness from foreground to horizon—creates a dreamlike stillness. The moonlight is impossibly even, casting no shadows." },
-      { heading: "Market Significance", body: "Tier C IV reflects niche proto-Surrealist appeal. Curators specializing in naive art or Surrealism history value it, but mainstream audiences often overlook it in favor of Rousseau's jungle paintings." },
+      { heading: "Market Significance", body: "Niche proto-Surrealist appeal limits broad demand. Curators specializing in naive art or Surrealism history value it, but mainstream audiences often overlook it in favor of Rousseau's jungle paintings." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -612,7 +576,6 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Jacques-Louis David",
     year: 1793,
     medium: "Oil on canvas",
-    tier: "C",
     insured_value: 70_000,
     image_url: "/artworks/art-031.jpg",
     tags: ["neoclassicism", "historical", "french"],
@@ -620,7 +583,7 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "David painted the work within months of Marat's assassination by Charlotte Corday in July 1793. As a fellow Jacobin, David turned the murder into propaganda—a revolutionary pietà—displayed in the National Convention." },
       { heading: "Technique", body: "David stripped the scene to essentials: bare wall, wooden crate, limp arm. The lighting borrows directly from Caravaggio's entombment scenes, elevating a bathtub murder to the register of sacred art." },
-      { heading: "Market Significance", body: "Tier C IV reflects its art-historical weight balanced against the narrow political-history niche. Curators mounting French Revolution or Neoclassicism exhibitions compete for it; general audiences find it disturbing." },
+      { heading: "Market Significance", body: "Significant art-historical weight balanced against a narrow political-history niche. Curators mounting French Revolution or Neoclassicism exhibitions compete for it; general audiences find it disturbing." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -630,7 +593,6 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "John Everett Millais",
     year: 1852,
     medium: "Oil on canvas",
-    tier: "C",
     insured_value: 58_000,
     image_url: "/artworks/art-032.jpg",
     tags: ["pre-raphaelite", "literary", "british"],
@@ -638,7 +600,7 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Millais painted the background on the banks of the Hogsmill River in Surrey, working outdoors for five months. Model Elizabeth Siddal posed in a bathtub of water heated by oil lamps—she caught a severe cold." },
       { heading: "Technique", body: "Every flower is botanically accurate and carries symbolic meaning from Victorian flower language. Millais painted wet-on-wet over a wet white ground to achieve the luminous, almost photographic detail." },
-      { heading: "Market Significance", body: "Tier C IV reflects strong Pre-Raphaelite niche demand but limited crossover to modern-art curators. Its literary subject and botanical detail make it a reliable draw for themed exhibitions." },
+      { heading: "Market Significance", body: "Strong Pre-Raphaelite niche demand but limited crossover to modern-art curators. Its literary subject and botanical detail make it a reliable draw for themed exhibitions." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -648,7 +610,6 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Édouard Manet",
     year: 1882,
     medium: "Oil on canvas",
-    tier: "C",
     insured_value: 62_000,
     image_url: "/artworks/art-033.jpg",
     tags: ["impressionism", "portrait", "french"],
@@ -656,7 +617,7 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Manet's last major work, painted while suffering from locomotor ataxia. The deliberately 'wrong' mirror reflection has generated over a century of art-historical debate about spatial ambiguity and the male gaze." },
       { heading: "Technique", body: "The still life on the bar—bottles, oranges, roses—is painted with bravura brushwork, while the reflected crowd dissolves into impressionistic haze. The spatial impossibility is calculated, not accidental." },
-      { heading: "Market Significance", body: "Tier C IV reflects its art-historical importance tempered by Manet's relative under-recognition among general audiences compared to Monet. Academic curators value it highly." },
+      { heading: "Market Significance", body: "Art-historical importance tempered by Manet's relative under-recognition among general audiences compared to Monet. Academic curators value it highly." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -666,7 +627,6 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Jan van Eyck",
     year: 1434,
     medium: "Oil on oak panel",
-    tier: "C",
     insured_value: 68_000,
     image_url: "/artworks/art-034.jpg",
     tags: ["northern-renaissance", "portrait", "flemish"],
@@ -674,26 +634,24 @@ export const SEED_ARTWORKS: Artwork[] = [
     gallery_notes: [
       { heading: "Historical Context", body: "Long thought to depict a wedding ceremony, recent scholarship suggests it may be a memorial portrait—the wife may already have been dead. The convex mirror reflects two witnesses, one possibly Van Eyck himself." },
       { heading: "Technique", body: "Van Eyck's oil-glaze technique—dozens of translucent layers over months—achieved a luminosity impossible in tempera. The chandelier, mirror, and dog fur demonstrate microscopic observational fidelity." },
-      { heading: "Market Significance", body: "Tier C IV reflects its foundational art-historical status balanced against Northern Renaissance's narrower curator pool compared to Italian Renaissance or Impressionism." },
+      { heading: "Market Significance", body: "Foundational art-historical status balanced against Northern Renaissance's narrower curator pool compared to Italian Renaissance or Impressionism." },
     ],
     created_at: new Date().toISOString(),
   }),
 
-  // Tier D
   art({
     id: "art-035",
     title: "The Hay Wain",
     artist: "John Constable",
     year: 1821,
     medium: "Oil on canvas",
-    tier: "D",
     insured_value: 22_000,
     image_url: "/artworks/art-035.jpg",
     tags: ["romanticism", "landscape", "british"],
     description: "A horse-drawn cart fording a stream beside a cottage. Quintessential English pastoral scene.",
     gallery_notes: [
       { heading: "Historical Context", body: "Constable painted the scene at Flatford Mill in Suffolk, using his childhood landscape as lifelong subject matter. The painting failed to sell in London but won a gold medal at the Paris Salon of 1824." },
-      { heading: "Market Significance", body: "Tier D IV reflects deep British-landscape niche appeal but minimal international curator demand. Reliable for pastoral-themed exhibitions but rarely requested outside that context." },
+      { heading: "Market Significance", body: "Deep British-landscape niche appeal but minimal international curator demand keeps the IV low. Reliable for pastoral-themed exhibitions but rarely requested outside that context." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -703,14 +661,13 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Pieter Bruegel the Elder",
     year: 1563,
     medium: "Oil on oak panel",
-    tier: "D",
     insured_value: 28_000,
     image_url: "/artworks/art-036.jpg",
     tags: ["northern-renaissance", "biblical", "flemish"],
     description: "A colossal unfinished tower spiraling skyward. Bruegel's meditation on human ambition and divine punishment.",
     gallery_notes: [
       { heading: "Technique", body: "Bruegel packed hundreds of tiny figures and construction details into the tower's spiraling ramps. The structure is modeled on the Roman Colosseum, which Bruegel sketched during his Italian travels." },
-      { heading: "Market Significance", body: "Tier D IV reflects the Northern Renaissance niche. The painting's complexity rewards close viewing in exhibitions, generating longer dwell times and higher visitor satisfaction scores." },
+      { heading: "Market Significance", body: "Modest IV with affordable carry. The painting's complexity rewards close viewing in exhibitions, generating longer dwell times and higher visitor satisfaction scores." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -720,14 +677,13 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Claude Monet",
     year: 1872,
     medium: "Oil on canvas",
-    tier: "D",
     insured_value: 25_000,
     image_url: "/artworks/art-037.jpg",
     tags: ["impressionism", "landscape", "french"],
     description: "Le Havre harbor at dawn. The painting that inadvertently named the Impressionist movement.",
     gallery_notes: [
       { heading: "Historical Context", body: "Shown at the first Impressionist exhibition in 1874, critic Louis Leroy used its title mockingly: 'Impression—I was certain of it.' The insult became the movement's badge of honor." },
-      { heading: "Market Significance", body: "Tier D IV reflects its historical importance versus modest visual impact—a small, quickly painted sketch. Art-history curators value the provenance story more than the canvas itself." },
+      { heading: "Market Significance", body: "Historically important as the painting that named Impressionism, but modest visual impact—a small, quickly painted sketch. Art-history curators value the provenance story more than the canvas itself." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -737,14 +693,13 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Édouard Manet",
     year: 1863,
     medium: "Oil on canvas",
-    tier: "D",
     insured_value: 30_000,
     image_url: "/artworks/art-038.jpg",
     tags: ["realism", "portrait", "french"],
     description: "A reclining nude gazes directly at the viewer. Scandalized the 1865 Paris Salon.",
     gallery_notes: [
       { heading: "Historical Context", body: "Manet's confrontational reworking of Titian's Venus of Urbino replaced idealized beauty with a contemporary courtesan. Critics were outraged by her direct gaze and the Black servant's presence, which remains a subject of postcolonial critique." },
-      { heading: "Market Significance", body: "Tier D IV reflects its canonical art-historical importance offset by exhibition sensitivity around its racial and sexual politics. Curators must contextualize carefully, limiting casual loan requests." },
+      { heading: "Market Significance", body: "Canonical art-historical importance offset by exhibition sensitivity around its racial and sexual politics. Curators must contextualize carefully, limiting casual loan requests." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -754,14 +709,13 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Jean-François Millet",
     year: 1857,
     medium: "Oil on canvas",
-    tier: "D",
     insured_value: 20_000,
     image_url: "/artworks/art-039.jpg",
     tags: ["realism", "landscape", "french"],
     description: "Three peasant women bent over a harvested field, gathering leftover grain. A monument to rural labor.",
     gallery_notes: [
       { heading: "Historical Context", body: "The painting outraged bourgeois critics who saw it as dangerously socialist—depicting the rural poor with the monumental dignity usually reserved for classical heroes. It entered the Louvre collection via public subscription." },
-      { heading: "Market Significance", body: "Tier D IV reflects niche realism-and-social-history appeal. Academic curators value it for thematic exhibitions on labor, class, and 19th-century France, but general audiences pass it by." },
+      { heading: "Market Significance", body: "Niche realism-and-social-history appeal keeps the IV low. Academic curators value it for thematic exhibitions on labor, class, and 19th-century France, but general audiences pass it by." },
     ],
     created_at: new Date().toISOString(),
   }),
@@ -771,14 +725,13 @@ export const SEED_ARTWORKS: Artwork[] = [
     artist: "Théodore Géricault",
     year: 1819,
     medium: "Oil on canvas",
-    tier: "D",
     insured_value: 26_000,
     image_url: "/artworks/art-040.jpg",
     tags: ["romanticism", "historical", "french"],
     description: "Survivors of the frigate Méduse on a makeshift raft, waving at a distant ship. A political scandal rendered as epic drama.",
     gallery_notes: [
       { heading: "Historical Context", body: "The shipwreck was a national scandal caused by an incompetent aristocratic captain. Géricault interviewed survivors and studied cadavers in the morgue to achieve unflinching realism. The painting was a sensation at the 1819 Salon." },
-      { heading: "Market Significance", body: "Tier D IV reflects the monumental canvas size (nearly 5×7 meters) that limits exhibition venues, paired with strong art-historical demand. Only institutions with large galleries can accommodate it." },
+      { heading: "Market Significance", body: "The monumental canvas size (nearly 5×7 meters) limits exhibition venues despite strong art-historical demand. Only institutions with large galleries can accommodate it." },
     ],
     created_at: new Date().toISOString(),
   }),

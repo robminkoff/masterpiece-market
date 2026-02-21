@@ -205,24 +205,14 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Three stats */}
-        <div className="grid grid-cols-3 gap-4 mb-5">
-          <div>
-            <div className="text-xs text-gray-500 mb-0.5">Cash</div>
-            <div className="text-2xl font-bold">{cash.toLocaleString()} cr</div>
-          </div>
-          <div>
-            <div className="text-xs text-gray-500 mb-0.5">Collection</div>
-            <div className="text-2xl font-bold">{collectionIV.toLocaleString()} cr</div>
-          </div>
-          <div>
-            <div className="text-xs text-gray-500 mb-0.5">Weekly Burn</div>
-            <div className={`text-2xl font-bold ${hs.text}`}>{weeklyBurn.toLocaleString()} cr</div>
-          </div>
+        {/* Cash — centered, prominent */}
+        <div className="text-center mb-5">
+          <div className="text-xs text-gray-500 mb-1">Cash</div>
+          <div className="text-4xl font-bold">{cash.toLocaleString()} cr</div>
         </div>
 
         {/* Runway bar */}
-        <div>
+        <div className="mb-5">
           <div className="flex items-center justify-between text-xs mb-1.5">
             <span className="text-gray-500">Runway</span>
             <span className="font-semibold">
@@ -235,6 +225,18 @@ export default function DashboardPage() {
           <div className="flex justify-between text-[10px] text-gray-400 mt-1">
             <span>0</span>
             <span>12+ wk</span>
+          </div>
+        </div>
+
+        {/* Collection + Weekly Burn — 2-col below bar */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <div className="text-xs text-gray-500 mb-0.5">Collection</div>
+            <div className="text-2xl font-bold">{collectionIV.toLocaleString()} cr</div>
+          </div>
+          <div className="text-right">
+            <div className="text-xs text-gray-500 mb-0.5">Weekly Burn</div>
+            <div className={`text-2xl font-bold ${hs.text}`}>{weeklyBurn.toLocaleString()} cr</div>
           </div>
         </div>
       </div>
