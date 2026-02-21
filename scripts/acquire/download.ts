@@ -34,12 +34,27 @@ async function resolveImageUrl(row: PackRow): Promise<string> {
 }
 
 async function downloadFile(url: string, dest: string): Promise<void> {
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status} downloading ${url}`);
+  const MAX_RETRIES = 3;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      const backoff = 5000 * attempt;
+      console.warn(`  Retry ${attempt}/${MAX_RETRIES} after ${backoff / 1000}s...`);
+      await delay(backoff);
+    }
+    const res = await fetch(url, {
+      headers: { "User-Agent": "MasterpieceMarket/1.0 (art game; polite bot)" },
+    });
+    if (res.status === 429 || res.status === 503) {
+      if (attempt < MAX_RETRIES) continue;
+      throw new Error(`HTTP ${res.status} downloading ${url} (after ${MAX_RETRIES} retries)`);
+    }
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} downloading ${url}`);
+    }
+    const buf = Buffer.from(await res.arrayBuffer());
+    fs.writeFileSync(dest, buf);
+    return;
   }
-  const buf = Buffer.from(await res.arrayBuffer());
-  fs.writeFileSync(dest, buf);
 }
 
 export async function downloadRow(row: PackRow): Promise<DownloadResult> {
@@ -87,8 +102,8 @@ export async function downloadPack(rows: PackRow[]): Promise<DownloadResult[]> {
   for (const row of rows) {
     const result = await downloadRow(row);
     results.push(result);
-    // Small delay between downloads for politeness
-    await delay(500);
+    // Delay between downloads to respect Wikimedia rate limits
+    await delay(4000);
   }
   return results;
 }

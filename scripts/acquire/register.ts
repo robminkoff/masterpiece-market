@@ -13,6 +13,7 @@ import * as fs from "fs";
 import { createClient } from "@supabase/supabase-js";
 import type { PackRow, NormalizeResult } from "./types";
 import { slugify } from "./types";
+import { tierFromIV } from "../../src/lib/types";
 import type { UploadResult } from "./upload";
 
 function getSupabase() {
@@ -40,6 +41,18 @@ export async function registerOne(
   const slug = slugify(row.title, row.artist);
   const artworkId = `art-${slug}`;
 
+  // Skip if an artwork with this title already exists (prevents duplicates from seed data)
+  const { data: existing } = await supabase
+    .from("artworks")
+    .select("id")
+    .ilike("title", row.title)
+    .eq("status", "active")
+    .limit(1);
+  if (existing && existing.length > 0 && existing[0].id !== artworkId) {
+    console.log(`  [${slug}] Skipped — "${row.title}" already exists as ${existing[0].id}`);
+    return { slug, artworkId: existing[0].id, success: true };
+  }
+
   // Compute a checksum of the web file for provenance
   const webFile = fs.readFileSync(norm.webPath);
   const checksum = crypto.createHash("sha256").update(webFile).digest("hex").slice(0, 16);
@@ -55,7 +68,7 @@ export async function registerOne(
     artist: row.artist,
     year: row.year ? Number(row.year) : null,
     medium: null, // CSV doesn't include medium; can be enriched later
-    tier: row.tier,
+    tier: tierFromIV(Number(row.insured_value)),
     insured_value: Number(row.insured_value),
     image_url: upload.originalUrl,
     image_url_web: upload.webUrl,
@@ -77,7 +90,9 @@ export async function registerOne(
   }
 
   // Append provenance event
+  const provId = `prov-${slug}-${Date.now()}`;
   const { error: provErr } = await supabase.from("provenance_events").insert({
+    id: provId,
     artwork_id: artworkId,
     event_type: "ingested",
     metadata: {
