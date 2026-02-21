@@ -47,6 +47,7 @@ interface PlayerState {
   totalCarryPaid: number;
   topUpUsesByRule: number[]; // per-rule usage count
   topUpSpent: number;
+  acquisitionsThisWeek: number; // tracks purchases this week for rate limiting
 }
 
 // ── Weekly carry cost (matches game formula) ────────────────────────
@@ -172,6 +173,7 @@ export function simulateRun(cfg: SimConfig, rng: PRNG): SimResult {
     totalCarryPaid: 0,
     topUpUsesByRule: cfg.topUp.rules.map(() => 0),
     topUpSpent: 0,
+    acquisitionsThisWeek: 0,
   };
 
   // ── Starting artwork (gifted at week 0) ──────────────────────────
@@ -194,6 +196,7 @@ export function simulateRun(cfg: SimConfig, rng: PRNG): SimResult {
 
   for (let week = 1; week <= cfg.maxWeeks; week++) {
     state.week = week;
+    state.acquisitionsThisWeek = 0; // reset weekly acquisition counter
 
     // ── 1. Process loan returns ──────────────────────────────────
     for (const w of state.artworks) {
@@ -348,6 +351,7 @@ function sellProceeds(work: SimArtwork, cfg: SimConfig, rng: PRNG): number {
 function acquireWorks(state: PlayerState, cfg: SimConfig, rng: PRNG): void {
   const needed = tierNeeded(state.artworks, cfg);
   const lots = generateLots(cfg, rng);
+  const cap = cfg.strategy.maxAcquisitionsPerWeek;
 
   // Try cheapest tiers first (D → C → B → A)
   for (const tier of TIERS_CHEAPEST_FIRST) {
@@ -359,6 +363,7 @@ function acquireWorks(state: PlayerState, cfg: SimConfig, rng: PRNG): void {
 
     for (const lot of tierLots) {
       if (needed[tier] <= 0) break;
+      if (state.acquisitionsThisWeek >= cap) return; // weekly cap reached
 
       // Draw clearing price
       const clearingPct = rng.normalClamped(
@@ -395,6 +400,7 @@ function acquireWorks(state: PlayerState, cfg: SimConfig, rng: PRNG): void {
         purchaseCost: totalCost,
       });
       needed[tier]--;
+      state.acquisitionsThisWeek++;
     }
   }
 }
@@ -435,6 +441,8 @@ function tryFlips(state: PlayerState, cfg: SimConfig, rng: PRNG): void {
 // ── Surprise packages ───────────────────────────────────────────────
 
 function buySurprisePackage(state: PlayerState, cfg: SimConfig, rng: PRNG): void {
+  if (state.acquisitionsThisWeek >= cfg.strategy.maxAcquisitionsPerWeek) return;
+
   const pkgs = cfg.surprisePackages.packages;
   if (pkgs.length === 0) return;
 
@@ -487,6 +495,7 @@ function buySurprisePackage(state: PlayerState, cfg: SimConfig, rng: PRNG): void
     acquiredWeek: state.week,
     purchaseCost: pkg.cost,
   });
+  state.acquisitionsThisWeek++;
 }
 
 // ── Result builder ──────────────────────────────────────────────────

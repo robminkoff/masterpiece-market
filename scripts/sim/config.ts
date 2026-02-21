@@ -61,6 +61,7 @@ export interface StrategyConfig {
   sellPreference: "dealer" | "auction" | "mixed";
   flippingEnabled: boolean;
   flipProfitThreshold: number; // min expected profit to flip (as fraction of IV)
+  maxAcquisitionsPerWeek: number; // cap on artworks acquired per week (99 = unlimited)
 }
 
 export interface MuseumConfig {
@@ -152,6 +153,7 @@ export const DEFAULT_STRATEGY: StrategyConfig = {
   sellPreference: "dealer",
   flippingEnabled: false,
   flipProfitThreshold: 0.05,
+  maxAcquisitionsPerWeek: 99, // effectively unlimited
 };
 
 export const DEFAULT_MUSEUM: MuseumConfig = {
@@ -180,33 +182,13 @@ export const DEFAULT_SURPRISE_PACKAGES: SurprisePackageConfig = {
   enabled: false,
   packages: [
     {
-      name: "Bronze",
-      cost: 25_000,
+      name: "Mystery",
+      cost: 100_000,
       tierWeights: [
-        { tier: "D", weight: 80 },
-        { tier: "C", weight: 15 },
-        { tier: "B", weight: 4 },
-        { tier: "A", weight: 1 },
-      ],
-    },
-    {
-      name: "Silver",
-      cost: 75_000,
-      tierWeights: [
-        { tier: "D", weight: 30 },
-        { tier: "C", weight: 40 },
-        { tier: "B", weight: 25 },
-        { tier: "A", weight: 5 },
-      ],
-    },
-    {
-      name: "Gold",
-      cost: 200_000,
-      tierWeights: [
-        { tier: "D", weight: 5 },
-        { tier: "C", weight: 15 },
-        { tier: "B", weight: 40 },
-        { tier: "A", weight: 40 },
+        { tier: "D", weight: 20 },
+        { tier: "C", weight: 35 },
+        { tier: "B", weight: 35 },
+        { tier: "A", weight: 10 },
       ],
     },
   ],
@@ -249,6 +231,7 @@ export interface TunePreset {
   startingCredits?: number;
   tierOverrides?: Partial<Record<Tier, Partial<TierConfig>>>;
   loanOverrides?: Partial<LoanConfig>;
+  strategyOverrides?: Partial<StrategyConfig>;
   startingArtwork?: Partial<StartingArtworkConfig>;
   surprisePackages?: Partial<SurprisePackageConfig>;
 }
@@ -350,6 +333,43 @@ export const TUNE_PRESETS: Record<string, TunePreset> = {
     name: "Full (1M+GPT+A+P)",
     startingCredits: 1_000_000,
     tierOverrides: { A: { premiumRate: 0.015 } },
+    startingArtwork: { enabled: true },
+    surprisePackages: { enabled: true },
+  },
+  // ── Acquisition rate-limit presets ──────────────────────────────
+  "cap1": {
+    name: "1/week",
+    startingCredits: 1_000_000,
+    strategyOverrides: { maxAcquisitionsPerWeek: 1 },
+  },
+  "cap2": {
+    name: "2/week",
+    startingCredits: 1_000_000,
+    strategyOverrides: { maxAcquisitionsPerWeek: 2 },
+  },
+  "cap1-pkg": {
+    name: "1/wk+Pkg",
+    startingCredits: 1_000_000,
+    strategyOverrides: { maxAcquisitionsPerWeek: 1 },
+    surprisePackages: { enabled: true },
+  },
+  "cap2-pkg": {
+    name: "2/wk+Pkg",
+    startingCredits: 1_000_000,
+    strategyOverrides: { maxAcquisitionsPerWeek: 2 },
+    surprisePackages: { enabled: true },
+  },
+  "cap1-art-pkg": {
+    name: "1/wk+A+P",
+    startingCredits: 1_000_000,
+    strategyOverrides: { maxAcquisitionsPerWeek: 1 },
+    startingArtwork: { enabled: true },
+    surprisePackages: { enabled: true },
+  },
+  "cap2-art-pkg": {
+    name: "2/wk+A+P",
+    startingCredits: 1_000_000,
+    strategyOverrides: { maxAcquisitionsPerWeek: 2 },
     startingArtwork: { enabled: true },
     surprisePackages: { enabled: true },
   },
@@ -496,7 +516,7 @@ export function buildScenarios(args: CLIArgs): SimConfig[] {
           market,
           topUp,
           loans,
-          strategy: { ...DEFAULT_STRATEGY, flippingEnabled: args.flipping },
+          strategy: { ...DEFAULT_STRATEGY, flippingEnabled: args.flipping, ...(tune.strategyOverrides ?? {}) },
           museum: { ...DEFAULT_MUSEUM },
           fees: { ...DEFAULT_FEES },
           startingArtwork,
