@@ -3,16 +3,6 @@ import Link from "next/link";
 export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] text-center gap-8">
-      <h1 className="text-5xl font-bold tracking-tight">
-        <span className="text-[var(--accent-dark)]">Masterpiece</span> Market
-      </h1>
-
-      <p className="text-lg max-w-xl text-gray-600 dark:text-gray-400">
-        Collect iconic artworks. Bid in live auctions. Manage insurance, loans,
-        and expertise. Build a legendary collection — or lose it all to carrying
-        costs.
-      </p>
-
       <div className="flex gap-4 flex-wrap justify-center">
         <Link
           href="/signup"
@@ -28,7 +18,25 @@ export default function Home() {
         </Link>
       </div>
 
+      <h1 className="text-7xl sm:text-8xl font-bold tracking-tight">
+        <span className="text-[var(--accent-dark)]">Masterpiece</span>
+        <br />
+        Market
+      </h1>
+
+      <p className="text-lg max-w-xl text-gray-600 dark:text-gray-400">
+        Collect iconic artworks. Bid in live auctions. Manage insurance, loans,
+        and expertise. Build a legendary collection — or lose it all to carrying
+        costs.
+      </p>
+
       <div className="flex gap-4 flex-wrap justify-center">
+        <Link
+          href="/solo"
+          className="bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
+        >
+          Solo Mode
+        </Link>
         <Link
           href="/auction-house"
           className="bg-[var(--accent-dark)]/80 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
@@ -50,6 +58,10 @@ export default function Home() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12 max-w-4xl w-full text-left">
+        <FeatureCard
+          title="Solo Mode"
+          desc="Turn-based single-player. Build a museum at your own pace, week by week."
+        />
         <FeatureCard
           title="Live Auctions"
           desc="Real-time bidding with countdown timers. Outbid rivals for masterpieces."

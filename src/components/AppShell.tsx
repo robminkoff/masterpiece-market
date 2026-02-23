@@ -72,12 +72,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <Link href="/" className="font-bold text-lg tracking-tight block text-center sm:text-left">
               <span className="text-[var(--accent-dark)]">Masterpiece</span> Market
             </Link>
-            <div className="flex justify-center gap-4 sm:gap-6 text-sm mt-1.5 sm:mt-0">
-              <Link href="/signin" className="hover:text-[var(--accent-dark)] transition-colors">
+            <div className="flex justify-center gap-3 text-sm mt-1.5 sm:mt-0">
+              <Link href="/signin" className="px-4 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                 Sign In
               </Link>
-              <Link href="/signup" className="hover:text-[var(--accent-dark)] transition-colors">
-                Sign Up
+              <Link href="/signup" className="px-4 py-1.5 rounded-lg bg-[var(--accent-dark)] text-white font-semibold hover:opacity-90 transition-opacity">
+                Create Account
               </Link>
             </div>
           </div>
@@ -115,6 +115,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
             <Link href="/rules" className="hover:text-[var(--accent-dark)] transition-colors whitespace-nowrap">
               Rules
+            </Link>
+            <Link href="/solo" className="hover:text-[var(--accent-dark)] transition-colors whitespace-nowrap">
+              Solo
             </Link>
             <Link href="/dashboard" className="hover:text-[var(--accent-dark)] transition-colors whitespace-nowrap">
               Dashboard

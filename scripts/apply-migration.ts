@@ -1,7 +1,9 @@
 import { execSync } from "child_process";
-import { readFileSync } from "fs";
+import { readFileSync, readdirSync } from "fs";
+import { resolve } from "path";
 
 const PROJECT_REF = "kegdjyxxmvghzvamdggx";
+const MIGRATIONS_DIR = "supabase/migrations";
 
 // Get access token from macOS Keychain (same as Supabase CLI uses)
 function getAccessToken(): string {
@@ -13,11 +15,33 @@ function getAccessToken(): string {
   return Buffer.from(b64, "base64").toString("utf-8");
 }
 
+function resolveMigrationFile(arg?: string): string {
+  if (arg) {
+    // Accept full path or just filename
+    if (arg.includes("/")) return arg;
+    return `${MIGRATIONS_DIR}/${arg}`;
+  }
+
+  // No argument: find the latest (highest-numbered) migration file
+  const files = readdirSync(MIGRATIONS_DIR)
+    .filter((f) => f.endsWith(".sql"))
+    .sort();
+  if (files.length === 0) {
+    console.error("No migration files found in", MIGRATIONS_DIR);
+    process.exit(1);
+  }
+  return `${MIGRATIONS_DIR}/${files[files.length - 1]}`;
+}
+
 async function applyMigration() {
+  const migrationFile = resolveMigrationFile(process.argv[2]);
+  const fullPath = resolve(migrationFile);
+
   const token = getAccessToken();
   console.log("Got Supabase access token from Keychain");
 
-  const sql = readFileSync("supabase/migrations/0007_text_ids_and_fixes.sql", "utf-8");
+  const sql = readFileSync(fullPath, "utf-8");
+  console.log(`Migration file: ${migrationFile}`);
   console.log(`Migration SQL: ${sql.length} chars\n`);
 
   console.log("Executing migration via Supabase Management API...\n");
@@ -40,7 +64,6 @@ async function applyMigration() {
   const result = await res.json();
   console.log("Migration result:", JSON.stringify(result, null, 2).slice(0, 2000));
   console.log("\nMigration applied successfully!");
-  console.log("Run `npx tsx scripts/check-migration.ts` to verify.");
 }
 
 applyMigration().catch(console.error);
