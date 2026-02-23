@@ -72,6 +72,29 @@ export interface MuseumConfig {
   minTotal: number;
   minTagDiversity: number;
   endowmentWeeks: number; // cash >= this * total_normal_weekly_carry
+  minPrestige: number;    // prestige points needed (0 = no requirement)
+  minStewardship: number; // stewardship score needed (0 = no requirement)
+}
+
+export interface MortgageConfig {
+  enabled: boolean;
+  ltvRate: number;              // loan-to-value ratio, e.g. 0.5 = borrow 50% of IV
+  weeklyInterestRate: number;   // e.g. 0.02 = 2% of principal per week
+  termWeeks: number;            // repayment window
+  maxMortgages: number;         // max concurrent mortgages
+}
+
+export interface GenreBonusConfig {
+  enabled: boolean;
+  bonusPerMatch: number; // e.g. 0.25 = +25% fee per additional matching-tag work loaned that week
+}
+
+export interface QuizConfig {
+  enabled: boolean;
+  entryFee: number;       // e.g. 1,000 cr
+  correctRate: number;    // probability of correct answer, e.g. 0.7
+  prestigeReward: number; // prestige points per correct answer
+  timesPerWeek: number;   // e.g. 7 (daily) or 1 (weekly)
 }
 
 export interface FeeConfig {
@@ -97,6 +120,25 @@ export interface PackageDef {
   tierWeights: { tier: Tier; weight: number }[];
 }
 
+// ── Achievement tiers (graduated outcomes) ───────────────────────────
+
+export type Achievement = "museum" | "wing" | "gallery" | "exhibition";
+
+export interface AchievementTierDef {
+  minArtworks: number;
+  minTags: number;
+  minBTier: number; // artworks of tier B or above
+  minATier: number; // artworks of tier A
+}
+
+export interface AchievementConfig {
+  enabled: boolean; // false = legacy binary (museum/bankruptcy/timeout)
+  exhibition: AchievementTierDef;
+  gallery: AchievementTierDef;
+  wing: AchievementTierDef;
+  // museum uses MuseumConfig requirements (top tier)
+}
+
 // ── Top-level simulation config ─────────────────────────────────────
 
 export interface SimConfig {
@@ -114,6 +156,10 @@ export interface SimConfig {
   surprisePackages: SurprisePackageConfig;
   idleSurchargeWeeks: number;
   idleSurchargeMultiplier: number;
+  mortgage: MortgageConfig;
+  genreBonus: GenreBonusConfig;
+  quiz: QuizConfig;
+  achievements: AchievementConfig;
 }
 
 // ── Tag pool for diversity modeling ─────────────────────────────────
@@ -127,10 +173,10 @@ export const TAG_POOL = [
 // ── Defaults ────────────────────────────────────────────────────────
 
 export const DEFAULT_TIERS: Record<Tier, TierConfig> = {
-  A: { minIV: 350_000, maxIV: 1_200_000, premiumRate: 0.025, storageFee: 1_000, lotsPerWeek: 1,  loanOfferProb: 0.12 },
-  B: { minIV:  75_000, maxIV:   349_000, premiumRate: 0.015, storageFee:   400, lotsPerWeek: 3,  loanOfferProb: 0.10 },
-  C: { minIV:  50_000, maxIV:    74_000, premiumRate: 0.008, storageFee:   100, lotsPerWeek: 6,  loanOfferProb: 0.07 },
-  D: { minIV:   5_000, maxIV:    49_000, premiumRate: 0.003, storageFee:    20, lotsPerWeek: 10, loanOfferProb: 0.05 },
+  A: { minIV: 350_000, maxIV: 1_200_000, premiumRate: 0.015, storageFee: 1_000, lotsPerWeek: 1,  loanOfferProb: 0.12 },
+  B: { minIV:  75_000, maxIV:   349_000, premiumRate: 0.010, storageFee:   400, lotsPerWeek: 3,  loanOfferProb: 0.10 },
+  C: { minIV:  50_000, maxIV:    74_000, premiumRate: 0.0075, storageFee:   100, lotsPerWeek: 6,  loanOfferProb: 0.07 },
+  D: { minIV:   5_000, maxIV:    49_000, premiumRate: 0.005,  storageFee:    20, lotsPerWeek: 10, loanOfferProb: 0.05 },
 };
 
 export const DEFAULT_LOANS: LoanConfig = {
@@ -140,10 +186,10 @@ export const DEFAULT_LOANS: LoanConfig = {
   feeIsPerLoan: true,
   premiumReduction: 0.7,
   curatorTiers: [
-    { name: "assistant",  weight: 50, feeRate: 0.0025 },
-    { name: "curator",    weight: 35, feeRate: 0.0045 },
-    { name: "chief",      weight: 13, feeRate: 0.0075 },
-    { name: "legendary",  weight:  2, feeRate: 0.012  },
+    { name: "assistant",  weight: 50, feeRate: 0.01  },
+    { name: "curator",    weight: 35, feeRate: 0.02  },
+    { name: "chief",      weight: 13, feeRate: 0.035 },
+    { name: "legendary",  weight:  2, feeRate: 0.05  },
   ],
 };
 
@@ -153,17 +199,47 @@ export const DEFAULT_STRATEGY: StrategyConfig = {
   sellPreference: "dealer",
   flippingEnabled: false,
   flipProfitThreshold: 0.05,
-  maxAcquisitionsPerWeek: 99, // effectively unlimited
+  maxAcquisitionsPerWeek: 3,
 };
 
 export const DEFAULT_MUSEUM: MuseumConfig = {
   minA: 1,
   minB: 1,
   minC: 2,
-  minD: 2,
-  minTotal: 6,
+  minD: 4,
+  minTotal: 8,
   minTagDiversity: 5,
-  endowmentWeeks: 12,
+  endowmentWeeks: 6,
+  minPrestige: 10,
+  minStewardship: 0,
+};
+
+export const DEFAULT_MORTGAGE: MortgageConfig = {
+  enabled: true,
+  ltvRate: 0.5,
+  weeklyInterestRate: 0.02,
+  termWeeks: 12,
+  maxMortgages: 2,
+};
+
+export const DEFAULT_GENRE_BONUS: GenreBonusConfig = {
+  enabled: true,
+  bonusPerMatch: 0.5,
+};
+
+export const DEFAULT_QUIZ: QuizConfig = {
+  enabled: true,
+  entryFee: 0,
+  correctRate: 0.7,
+  prestigeReward: 1,
+  timesPerWeek: 7,
+};
+
+export const DEFAULT_ACHIEVEMENTS: AchievementConfig = {
+  enabled: true,
+  exhibition: { minArtworks: 2, minTags: 2, minBTier: 0, minATier: 0 },
+  gallery:    { minArtworks: 4, minTags: 3, minBTier: 1, minATier: 0 },
+  wing:       { minArtworks: 6, minTags: 4, minBTier: 2, minATier: 1 },
 };
 
 export const DEFAULT_FEES: FeeConfig = {
@@ -174,12 +250,12 @@ export const DEFAULT_FEES: FeeConfig = {
 };
 
 export const DEFAULT_STARTING_ARTWORK: StartingArtworkConfig = {
-  enabled: false,
+  enabled: true,
   tier: "D",
 };
 
 export const DEFAULT_SURPRISE_PACKAGES: SurprisePackageConfig = {
-  enabled: false,
+  enabled: true,
   packages: [
     {
       name: "Mystery",
@@ -193,6 +269,13 @@ export const DEFAULT_SURPRISE_PACKAGES: SurprisePackageConfig = {
     },
   ],
 };
+
+export const RAISED_LOAN_FEES: LoanConfig["curatorTiers"] = [
+  { name: "assistant",  weight: 50, feeRate: 0.01  },
+  { name: "curator",    weight: 35, feeRate: 0.02  },
+  { name: "chief",      weight: 13, feeRate: 0.035 },
+  { name: "legendary",  weight:  2, feeRate: 0.05  },
+];
 
 // ── Market presets ──────────────────────────────────────────────────
 
@@ -234,6 +317,11 @@ export interface TunePreset {
   strategyOverrides?: Partial<StrategyConfig>;
   startingArtwork?: Partial<StartingArtworkConfig>;
   surprisePackages?: Partial<SurprisePackageConfig>;
+  mortgageOverrides?: Partial<MortgageConfig>;
+  genreBonusOverrides?: Partial<GenreBonusConfig>;
+  quizOverrides?: Partial<QuizConfig>;
+  museumOverrides?: Partial<MuseumConfig>;
+  achievementOverrides?: Partial<AchievementConfig>;
 }
 
 export const TUNE_PRESETS: Record<string, TunePreset> = {
@@ -373,6 +461,104 @@ export const TUNE_PRESETS: Record<string, TunePreset> = {
     startingArtwork: { enabled: true },
     surprisePackages: { enabled: true },
   },
+  // ── New mechanic presets ──────────────────────────────────────────
+  highfees: {
+    name: "High Fees",
+    loanOverrides: { curatorTiers: RAISED_LOAN_FEES },
+  },
+  mortgage: {
+    name: "Mortgage",
+    mortgageOverrides: { enabled: true },
+  },
+  quiz: {
+    name: "Quiz",
+    quizOverrides: { enabled: true },
+    museumOverrides: { minPrestige: 10 },
+  },
+  genre: {
+    name: "Genre Bonus",
+    genreBonusOverrides: { enabled: true },
+  },
+  "1m-pkg-hf": {
+    name: "1M+Pkg+HighFees",
+    startingCredits: 1_000_000,
+    surprisePackages: { enabled: true },
+    loanOverrides: { curatorTiers: RAISED_LOAN_FEES },
+  },
+  "1m-pkg-mort": {
+    name: "1M+Pkg+Mortgage",
+    startingCredits: 1_000_000,
+    surprisePackages: { enabled: true },
+    mortgageOverrides: { enabled: true },
+  },
+  "1m-pkg-quiz": {
+    name: "1M+Pkg+Quiz",
+    startingCredits: 1_000_000,
+    surprisePackages: { enabled: true },
+    quizOverrides: { enabled: true },
+    museumOverrides: { minPrestige: 10 },
+  },
+  "1m-pkg-all": {
+    name: "1M+Pkg+All",
+    startingCredits: 1_000_000,
+    surprisePackages: { enabled: true },
+    loanOverrides: { curatorTiers: RAISED_LOAN_FEES },
+    mortgageOverrides: { enabled: true },
+    genreBonusOverrides: { enabled: true },
+    quizOverrides: { enabled: true },
+    museumOverrides: { minPrestige: 10 },
+  },
+  // ── Default / educational preset (matches built-in defaults) ──────
+  default: {
+    name: "Default",
+  },
+  // ── Legacy preset (restores pre-unified defaults for regression) ──
+  legacy: {
+    name: "Legacy",
+    startingCredits: 250_000,
+    tierOverrides: {
+      A: { premiumRate: 0.025 },
+      B: { premiumRate: 0.015 },
+    },
+    loanOverrides: {
+      curatorTiers: [
+        { name: "assistant",  weight: 50, feeRate: 0.0025 },
+        { name: "curator",    weight: 35, feeRate: 0.0045 },
+        { name: "chief",      weight: 13, feeRate: 0.0075 },
+        { name: "legendary",  weight:  2, feeRate: 0.012  },
+      ],
+    },
+    strategyOverrides: { maxAcquisitionsPerWeek: 99 },
+    startingArtwork: { enabled: false },
+    surprisePackages: { enabled: false },
+    mortgageOverrides: { enabled: false },
+    genreBonusOverrides: { enabled: false, bonusPerMatch: 0.25 },
+    quizOverrides: { enabled: false, prestigeReward: 2 },
+    museumOverrides: {
+      minA: 1, minB: 1, minC: 2, minD: 2, minTotal: 6,
+      minTagDiversity: 5, endowmentWeeks: 12, minPrestige: 0,
+    },
+    achievementOverrides: { enabled: false },
+  },
+  "student-hard": {
+    name: "Student Hard",
+    startingCredits: 1_000_000,
+    tierOverrides: {
+      A: { premiumRate: 0.015 },
+      B: { premiumRate: 0.010 },
+    },
+    loanOverrides: { curatorTiers: RAISED_LOAN_FEES },
+    strategyOverrides: { maxAcquisitionsPerWeek: 2 },
+    surprisePackages: { enabled: true },
+    mortgageOverrides: { enabled: true },
+    genreBonusOverrides: { enabled: true, bonusPerMatch: 0.5 },
+    quizOverrides: { enabled: true, prestigeReward: 3 },
+    museumOverrides: {
+      minA: 2, minB: 2, minC: 3, minD: 3, minTotal: 10,
+      minTagDiversity: 7, endowmentWeeks: 8, minPrestige: 30,
+    },
+    achievementOverrides: { enabled: true },
+  },
 };
 
 // ── Build a single config from presets ───────────────────────────────
@@ -386,7 +572,7 @@ export function buildConfig(
   const topUp = TOPUP_PRESETS[topUpKey] ?? TOPUP_PRESETS.none;
   return {
     name: `${market.name} / ${topUp.name}`,
-    startingCredits: 250_000,
+    startingCredits: 1_000_000,
     maxWeeks: 104,
     tiers: { ...DEFAULT_TIERS },
     market,
@@ -399,6 +585,10 @@ export function buildConfig(
     surprisePackages: { ...DEFAULT_SURPRISE_PACKAGES },
     idleSurchargeWeeks: 8,
     idleSurchargeMultiplier: 1.2,
+    mortgage: { ...DEFAULT_MORTGAGE },
+    genreBonus: { ...DEFAULT_GENRE_BONUS },
+    quiz: { ...DEFAULT_QUIZ },
+    achievements: { ...DEFAULT_ACHIEVEMENTS },
     ...overrides,
   };
 }
@@ -510,19 +700,23 @@ export function buildScenarios(args: CLIArgs): SimConfig[] {
 
         scenarios.push({
           name: `${prefix}${market.name} / ${topUp.name}`,
-          startingCredits: tune.startingCredits ?? 250_000,
+          startingCredits: tune.startingCredits ?? 1_000_000,
           maxWeeks: args.maxWeeks,
           tiers,
           market,
           topUp,
           loans,
           strategy: { ...DEFAULT_STRATEGY, flippingEnabled: args.flipping, ...(tune.strategyOverrides ?? {}) },
-          museum: { ...DEFAULT_MUSEUM },
+          museum: { ...DEFAULT_MUSEUM, ...(tune.museumOverrides ?? {}) },
           fees: { ...DEFAULT_FEES },
           startingArtwork,
           surprisePackages,
           idleSurchargeWeeks: 8,
           idleSurchargeMultiplier: 1.2,
+          mortgage: { ...DEFAULT_MORTGAGE, ...(tune.mortgageOverrides ?? {}) },
+          genreBonus: { ...DEFAULT_GENRE_BONUS, ...(tune.genreBonusOverrides ?? {}) },
+          quiz: { ...DEFAULT_QUIZ, ...(tune.quizOverrides ?? {}) },
+          achievements: { ...DEFAULT_ACHIEVEMENTS, ...(tune.achievementOverrides ?? {}) },
         });
       }
     }

@@ -6,6 +6,7 @@ import type {
   Artwork,
   Auction,
   ArtworkTier,
+  Mortgage,
   Npc,
   Ownership,
   PackageKey,
@@ -18,6 +19,11 @@ import {
   STARTING_CREDITS,
   IV_TIER_THRESHOLDS,
   SURPRISE_PACKAGES,
+  MORTGAGE_CONFIG,
+  DEALER_BUY_RATE,
+  MUSEUM_FOUNDING_BONUS,
+  MAX_MUSEUMS,
+  QUIZ_EXPERTISE_REWARD,
 } from "@/lib/types";
 
 const db = supabaseAdmin;
@@ -334,6 +340,11 @@ export async function applyBurnTick(
     await adjustCredits(userId, -weeklyTotal, `Weekly carry cost (week ${i + 1} of ${weeksElapsed})`);
   }
 
+  // Process mortgage ticks for each elapsed week
+  for (let i = 0; i < weeksElapsed; i++) {
+    await processMortgageTick(userId);
+  }
+
   // Advance last_burn_at
   const newBurnAt = new Date(lastBurn + weeksElapsed * msPerWeek).toISOString();
   await db.from("profiles").update({ last_burn_at: newBurnAt }).eq("id", userId);
@@ -485,6 +496,228 @@ export async function buyPackage(
   await adjustCredits(userId, -pkg.cost, `Surprise package: ${pkg.label}`);
 
   return { artwork, tier, packageLabel: pkg.label };
+}
+
+// ──────────────────────────────────────────────
+// Mortgages
+// ──────────────────────────────────────────────
+
+export async function getActiveMortgages(ownerId: string): Promise<Mortgage[]> {
+  const { data, error } = await db
+    .from("mortgages")
+    .select("*")
+    .eq("owner_id", ownerId)
+    .eq("status", "active");
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getActiveMortgageForArtwork(artworkId: string): Promise<Mortgage | null> {
+  const { data, error } = await db
+    .from("mortgages")
+    .select("*")
+    .eq("artwork_id", artworkId)
+    .eq("status", "active")
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function getActiveMortgageCount(ownerId: string): Promise<number> {
+  const { count, error } = await db
+    .from("mortgages")
+    .select("*", { count: "exact", head: true })
+    .eq("owner_id", ownerId)
+    .eq("status", "active");
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export async function createMortgage(params: {
+  artworkId: string;
+  ownerId: string;
+  principal: number;
+}): Promise<Mortgage> {
+  const id = `mtg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const { data, error } = await db
+    .from("mortgages")
+    .insert({
+      id,
+      artwork_id: params.artworkId,
+      owner_id: params.ownerId,
+      principal: params.principal,
+      weekly_interest_rate: MORTGAGE_CONFIG.weeklyInterestRate,
+      term_weeks: MORTGAGE_CONFIG.termWeeks,
+      weeks_remaining: MORTGAGE_CONFIG.termWeeks,
+      status: "active",
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function repayMortgage(mortgageId: string): Promise<void> {
+  const { error } = await db
+    .from("mortgages")
+    .update({ status: "repaid", matured_at: new Date().toISOString() })
+    .eq("id", mortgageId);
+  if (error) throw error;
+}
+
+export async function processMortgageTick(userId: string): Promise<void> {
+  const mortgages = await getActiveMortgages(userId);
+  for (const m of mortgages) {
+    const interest = Math.round(m.principal * m.weekly_interest_rate);
+    await adjustCredits(userId, -interest, `Mortgage interest on ${m.artwork_id}`);
+
+    const newWeeks = m.weeks_remaining - 1;
+    if (newWeeks <= 0) {
+      // Term expired — force sale at dealer rate to repay
+      const artwork = await getArtwork(m.artwork_id);
+      if (artwork) {
+        const salePrice = Math.round(artwork.insured_value * DEALER_BUY_RATE);
+        await executeSaleDb({
+          artworkId: m.artwork_id,
+          buyerId: "npc-d01",
+          sellerId: userId,
+          salePrice,
+          via: "mortgage_default_sale",
+        });
+        await adjustCredits(userId, salePrice, `Mortgage default sale: ${artwork.title}`);
+      }
+      await db
+        .from("mortgages")
+        .update({ status: "defaulted", weeks_remaining: 0, matured_at: new Date().toISOString() })
+        .eq("id", m.id);
+    } else {
+      await db.from("mortgages").update({ weeks_remaining: newWeeks }).eq("id", m.id);
+    }
+  }
+}
+
+// ──────────────────────────────────────────────
+// Quiz
+// ──────────────────────────────────────────────
+
+export async function canTakeQuizToday(userId: string): Promise<boolean> {
+  const profile = await getProfile(userId);
+  if (!profile?.last_quiz_at) return true;
+  const lastQuiz = new Date(profile.last_quiz_at);
+  const now = new Date();
+  return (
+    lastQuiz.getUTCFullYear() !== now.getUTCFullYear() ||
+    lastQuiz.getUTCMonth() !== now.getUTCMonth() ||
+    lastQuiz.getUTCDate() !== now.getUTCDate()
+  );
+}
+
+export async function recordQuizResult(
+  userId: string,
+  correct: boolean,
+): Promise<{ expertiseGained: number; newExpertise: number }> {
+  const expertiseGained = correct ? QUIZ_EXPERTISE_REWARD : 0;
+
+  // Update last_quiz_at and prestige
+  const profile = await getProfile(userId);
+  if (!profile) throw new Error("Profile not found");
+
+  const newExpertise = profile.expertise + expertiseGained;
+  const { error } = await db
+    .from("profiles")
+    .update({ last_quiz_at: new Date().toISOString(), expertise: newExpertise })
+    .eq("id", userId);
+  if (error) throw error;
+
+  return { expertiseGained, newExpertise };
+}
+
+// ──────────────────────────────────────────────
+// Museums
+// ──────────────────────────────────────────────
+
+export async function getMuseumCount(userId: string): Promise<number> {
+  const { count, error } = await db
+    .from("museums")
+    .select("*", { count: "exact", head: true })
+    .eq("owner_id", userId);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export async function getMuseums(): Promise<import("@/lib/types").Museum[]> {
+  const { data, error } = await db
+    .from("museums")
+    .select("*")
+    .order("founded_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function foundMuseum(params: {
+  ownerId: string;
+  name: string;
+  endowment: number;
+}): Promise<import("@/lib/types").Museum> {
+  const id = `mus-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const { data, error } = await db
+    .from("museums")
+    .insert({
+      id,
+      owner_id: params.ownerId,
+      name: params.name,
+      status: "active",
+      endowment: params.endowment,
+      staff_curator_count: 0,
+      level: "emerging",
+      founded_at: new Date().toISOString(),
+      dissolved_at: null,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function executeAscension(userId: string, museumCount: number): Promise<void> {
+  // Return all owned artworks to dealer via execute_sale
+  const playerOwnerships = await getOwnershipsByOwner(userId);
+  for (const o of playerOwnerships) {
+    await executeSaleDb({
+      artworkId: o.artwork_id,
+      buyerId: "npc-d01",
+      sellerId: userId,
+      salePrice: 0,
+      via: "museum_founding_sale",
+    });
+  }
+
+  // Calculate bonus: min(museumCount, MAX_MUSEUMS) * MUSEUM_FOUNDING_BONUS
+  const bonus = Math.min(museumCount, MAX_MUSEUMS) * MUSEUM_FOUNDING_BONUS;
+  const newCredits = STARTING_CREDITS + bonus;
+
+  // Reset credits and burn timer
+  const { error } = await db
+    .from("profiles")
+    .update({ credits: newCredits, last_burn_at: new Date().toISOString() })
+    .eq("id", userId);
+  if (error) throw error;
+
+  // Clear credit events
+  await db.from("credit_events").delete().eq("user_id", userId);
+
+  // Gift a random D-tier artwork
+  const dTierArtworks = await getDealerDTierArtworks();
+  if (dTierArtworks.length > 0) {
+    const gift = dTierArtworks[Math.floor(Math.random() * dTierArtworks.length)];
+    await executeSaleDb({
+      artworkId: gift.artwork.id,
+      buyerId: userId,
+      sellerId: gift.ownership.owner_id,
+      salePrice: 0,
+      via: "ascension_gift",
+    });
+  }
 }
 
 // ──────────────────────────────────────────────

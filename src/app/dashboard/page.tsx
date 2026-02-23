@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { weeklyCarryCost, IDLE_WEEKS_THRESHOLD, LOAN_PREMIUM_REDUCTION, DEALER_BUY_RATE, MUSEUM_FOUNDING_REQUIREMENTS, museumEndowmentRequired } from "@/lib/types";
-import type { EnrichedArtwork, ArtworkTier, Ownership } from "@/lib/types";
+import { weeklyCarryCost, IDLE_WEEKS_THRESHOLD, LOAN_PREMIUM_REDUCTION, DEALER_BUY_RATE, MUSEUM_FOUNDING_REQUIREMENTS, museumEndowmentRequired, computeAchievementTier, ACHIEVEMENT_REQUIREMENTS } from "@/lib/types";
+import type { EnrichedArtwork, ArtworkTier, AchievementTier, Ownership, Mortgage } from "@/lib/types";
 import { ArtFrame } from "@/components/ArtFrame";
 
 // ---------- Health thresholds ----------
@@ -34,6 +34,13 @@ const TIER_BADGE: Record<string, { bg: string; text: string }> = {
   D: { bg: "bg-slate-100 dark:bg-slate-800/50", text: "text-slate-700 dark:text-slate-400" },
 };
 
+const TIER_BORDER: Record<string, string> = {
+  A: "border-amber-400 dark:border-amber-600",
+  B: "border-stone-400 dark:border-stone-500",
+  C: "border-zinc-400 dark:border-zinc-500",
+  D: "border-slate-400 dark:border-slate-500",
+};
+
 // ---------- Types ----------
 
 interface OwnedRow {
@@ -43,6 +50,7 @@ interface OwnedRow {
   tier: string;
   iv: number;
   imageUrl: string | null;
+  imageThumb: string | null;
   weeklyCost: number;
   weeklyCostIfLoaned: number;
   idleWeeks: number;
@@ -67,19 +75,25 @@ export default function DashboardPage() {
   const [showCreditModal, setShowCreditModal] = useState(false);
   const [showSellModal, setShowSellModal] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [prestige, setPrestige] = useState(0);
-  const [stewardship, setStewardship] = useState(0);
+  const [expertise, setExpertise] = useState(0);
+  const [mortgages, setMortgages] = useState<Mortgage[]>([]);
+  const [showFoundModal, setShowFoundModal] = useState(false);
+  const [museumNameInput, setMuseumNameInput] = useState("");
+  const [founding, setFounding] = useState(false);
+  const [showAscensionModal, setShowAscensionModal] = useState(false);
+  const [ascensionMuseumCount, setAscensionMuseumCount] = useState(0);
 
   const loadData = useCallback(() => {
     Promise.all([
       fetch("/api/account").then((r) => r.json()),
       fetch("/api/artworks").then((r) => r.json()),
       fetch("/api/credits").then((r) => r.json()),
-    ]).then(([accountData, artData, creditData]) => {
+      fetch("/api/mortgage").then((r) => r.json()).catch(() => ({ mortgages: [] })),
+    ]).then(([accountData, artData, creditData, mortgageData]) => {
+      setMortgages(mortgageData.mortgages ?? []);
       const userId = accountData.profile?.id;
       setCurrentUserId(userId ?? null);
-      setPrestige(accountData.profile?.prestige ?? 0);
-      setStewardship(accountData.profile?.stewardship ?? 0);
+      setExpertise(accountData.profile?.expertise ?? 0);
       setCredits(creditData.credits ?? 0);
 
       const artworks = (artData.artworks ?? []) as (EnrichedArtwork & { ownership?: Ownership })[];
@@ -99,6 +113,7 @@ export default function DashboardPage() {
             tier,
             iv,
             imageUrl: art.image_url ?? null,
+            imageThumb: art.image_url_thumb ?? art.image_url ?? null,
             weeklyCost: weeklyCarryCost(iv, tier, onLoan, idleWeeks),
             weeklyCostIfLoaned: weeklyCarryCost(iv, tier, true, 0),
             idleWeeks,
@@ -188,11 +203,28 @@ export default function DashboardPage() {
     { label: "Tier D artworks", current: tierCounts.D, target: MUSEUM_FOUNDING_REQUIREMENTS.minTierD },
     { label: "Total artworks", current: rows.length, target: MUSEUM_FOUNDING_REQUIREMENTS.minTotalArtworks },
     { label: "Tag diversity", current: uniqueTags, target: MUSEUM_FOUNDING_REQUIREMENTS.minTagDiversity },
-    { label: "Prestige", current: prestige, target: MUSEUM_FOUNDING_REQUIREMENTS.minPrestige },
-    { label: "Stewardship", current: stewardship, target: MUSEUM_FOUNDING_REQUIREMENTS.minStewardship },
+    { label: "Expertise", current: expertise, target: MUSEUM_FOUNDING_REQUIREMENTS.minExpertise },
     { label: "Endowment", current: credits, target: endowmentNeeded },
+    { label: "Mortgages cleared", current: mortgages.length === 0 ? 1 : 0, target: 1 },
   ];
   const metCount = museumReqs.filter((r) => r.current >= r.target).length;
+
+  // ---------- Achievement tier ----------
+  const currentAchievement: AchievementTier = computeAchievementTier(rows.map((r) => ({ tier: r.tier as ArtworkTier, tags: r.tags })));
+  const ACHIEVEMENT_LABELS: Record<AchievementTier, string> = {
+    none: "Start",
+    exhibition_hall: "Hall",
+    gallery: "Gallery",
+    wing: "Wing",
+    museum: "Museum",
+  };
+  const ACHIEVEMENT_ORDER: AchievementTier[] = ["none", "exhibition_hall", "gallery", "wing", "museum"];
+  const currentIdx = ACHIEVEMENT_ORDER.indexOf(currentAchievement);
+  const nextTier = currentIdx < ACHIEVEMENT_ORDER.length - 1 ? ACHIEVEMENT_ORDER[currentIdx + 1] : null;
+
+  // Group owned artworks by tier for museum thumbnail slots
+  const artsByTier: Record<string, OwnedRow[]> = { A: [], B: [], C: [], D: [] };
+  for (const r of rows) if (r.tier in artsByTier) artsByTier[r.tier].push(r);
 
   // ---------- Top-up handler ----------
   async function handleTopUp(amount: number) {
@@ -318,6 +350,76 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* ========== ACHIEVEMENT TIER ========== */}
+      <section className="mt-6">
+        <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-4">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-400 mb-3">Achievement Tier</h3>
+          {/* Tier labels + progress segments on one line */}
+          <div className="flex items-center gap-1 mb-3">
+            {ACHIEVEMENT_ORDER.map((tier, i) => {
+              const reached = i <= currentIdx;
+              const isCurrent = i === currentIdx;
+              const isLast = i === ACHIEVEMENT_ORDER.length - 1;
+              return (
+                <div key={tier} className={`flex items-center ${isLast ? "" : "flex-1"}`}>
+                  <span className={`text-[10px] font-semibold whitespace-nowrap ${isCurrent ? "text-[var(--accent-dark)]" : reached ? "text-gray-700 dark:text-gray-200" : "text-gray-400 dark:text-gray-500"}`}>
+                    {ACHIEVEMENT_LABELS[tier]}
+                  </span>
+                  {!isLast && (
+                    <div className={`h-1.5 flex-1 rounded-full mx-1.5 ${i < currentIdx ? "bg-[var(--accent)]" : "bg-gray-200 dark:bg-gray-700"}`} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {/* Next tier requirements checklist */}
+          {nextTier && nextTier !== "museum" && (() => {
+            const reqs = ACHIEVEMENT_REQUIREMENTS[nextTier as keyof typeof ACHIEVEMENT_REQUIREMENTS];
+            const bCount = rows.filter((r) => r.tier === "B").length;
+            const aCount = rows.filter((r) => r.tier === "A").length;
+            const tagCount = new Set(rows.flatMap((r) => r.tags)).size;
+            const checks = [
+              { label: `${reqs.minArtworks}+ artworks`, met: rows.length >= reqs.minArtworks },
+              { label: `${reqs.minTags}+ tags`, met: tagCount >= reqs.minTags },
+              ...(reqs.minBTier > 0 ? [{ label: `${reqs.minBTier}+ B-tier`, met: bCount >= reqs.minBTier }] : []),
+              ...(reqs.minATier > 0 ? [{ label: `${reqs.minATier}+ A-tier`, met: aCount >= reqs.minATier }] : []),
+            ];
+            return (
+              <div className="flex flex-wrap gap-2">
+                {checks.map((c) => (
+                  <span key={c.label} className={`text-xs px-2 py-1 rounded ${c.met ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" : "bg-gray-100 dark:bg-gray-800 text-gray-500"}`}>
+                    {c.label}
+                  </span>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+      </section>
+
+      {/* ========== ACTIVE MORTGAGES ========== */}
+      {mortgages.length > 0 && (
+        <section className="mt-6">
+          <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-4">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-400 mb-3">Active Mortgages</h3>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <p className="text-2xl font-bold">{mortgages.length}</p>
+                <p className="text-xs text-gray-500">Active</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{mortgages.reduce((s, m) => s + m.principal, 0).toLocaleString()}</p>
+                <p className="text-xs text-gray-500">Total Principal (cr)</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{mortgages.reduce((s, m) => s + Math.round(m.principal * m.weekly_interest_rate), 0).toLocaleString()}</p>
+                <p className="text-xs text-gray-500">Weekly Interest (cr)</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ========== COLLECTION (liability-first) ========== */}
       <section className="mt-8">
         <h2 className="text-lg font-semibold mb-3">Your Collection</h2>
@@ -396,21 +498,37 @@ export default function DashboardPage() {
       <section className="mt-8">
         <h2 className="text-lg font-semibold mb-3">Museum Progress</h2>
         <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-4 space-y-5">
-          {/* Tier frames row */}
+          {/* Tier thumbnail slots */}
           <div className="grid grid-cols-4 gap-3">
             {(["A", "B", "C", "D"] as const).map((tier) => {
               const current = tierCounts[tier];
               const target = MUSEUM_FOUNDING_REQUIREMENTS[`minTier${tier}` as keyof typeof MUSEUM_FOUNDING_REQUIREMENTS] as number;
               const met = current >= target;
               const badge = TIER_BADGE[tier];
+              const arts = artsByTier[tier];
+              const slots = Array.from({ length: target }, (_, i) => arts[i] ?? null);
               return (
-                <div key={tier} className="flex flex-col items-center gap-1">
-                  <span className={`text-xs font-semibold ${badge.text}`}>{tier}</span>
-                  <div className={`border-2 px-4 py-3 inline-flex flex-col items-center ${met ? "border-green-400 dark:border-green-600 bg-green-50 dark:bg-green-950/30" : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50"}`}>
-                    <span className={`text-base font-bold leading-none ${met ? "text-green-700 dark:text-green-400" : ""}`}>{current}</span>
-                    <div className={`w-full h-px my-0.5 ${met ? "bg-green-300 dark:bg-green-700" : "bg-gray-300 dark:bg-gray-600"}`} />
-                    <span className="text-xs text-gray-400 leading-none">{target}</span>
+                <div key={tier} className="flex flex-col items-center gap-1.5">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${badge.bg} ${badge.text}`}>{tier}</span>
+                  <div className="flex flex-col gap-1.5">
+                    {slots.map((art, i) =>
+                      art ? (
+                        <Link key={art.artworkId} href={`/artworks/${art.artworkId}`} title={art.title}>
+                          <div className={`w-20 h-20 rounded border-2 ${met ? "border-green-400 dark:border-green-600" : TIER_BORDER[tier]} overflow-hidden`}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={art.imageThumb ?? art.imageUrl ?? ""} alt={art.title} className="w-full h-full object-cover" />
+                          </div>
+                        </Link>
+                      ) : (
+                        <div key={`empty-${tier}-${i}`} className="w-20 h-20 rounded border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center">
+                          <span className="text-gray-300 dark:text-gray-600 text-lg leading-none">+</span>
+                        </div>
+                      ),
+                    )}
                   </div>
+                  <span className={`text-[10px] font-medium ${met ? "text-green-600 dark:text-green-400" : "text-gray-400"}`}>
+                    {current} / {target}
+                  </span>
                 </div>
               );
             })}
@@ -427,12 +545,7 @@ export default function DashboardPage() {
                 <div key={req.label} className="flex items-center justify-between py-1">
                   <span className="text-sm text-gray-600 dark:text-gray-400">{req.label}</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">{req.current} / {req.target}</span>
-                    {met ? (
-                      <span className="text-green-600 dark:text-green-400 text-sm">&#10003;</span>
-                    ) : (
-                      <span className="text-gray-300 dark:text-gray-600 text-sm">&#10007;</span>
-                    )}
+                    <span className={`text-sm font-medium ${met ? "text-green-600 dark:text-green-400" : ""}`}>{req.current} / {req.target}</span>
                   </div>
                 </div>
               );
@@ -442,8 +555,7 @@ export default function DashboardPage() {
           {/* Progress bars */}
           <div className="space-y-3">
             {[
-              { label: "Prestige", current: prestige, target: MUSEUM_FOUNDING_REQUIREMENTS.minPrestige, fmt: (v: number) => String(v) },
-              { label: "Stewardship", current: stewardship, target: MUSEUM_FOUNDING_REQUIREMENTS.minStewardship, fmt: (v: number) => String(v) },
+              { label: "Expertise", current: expertise, target: MUSEUM_FOUNDING_REQUIREMENTS.minExpertise, fmt: (v: number) => String(v) },
               { label: "Endowment", current: credits, target: endowmentNeeded, fmt: (v: number) => `${v.toLocaleString()} cr` },
             ].map((req) => {
               const met = req.current >= req.target;
@@ -454,7 +566,6 @@ export default function DashboardPage() {
                     <span className="text-gray-600 dark:text-gray-400">{req.label}</span>
                     <span className="font-medium">
                       {req.fmt(req.current)} / {req.fmt(req.target)}
-                      {met && <span className="text-green-600 dark:text-green-400 ml-1.5">&#10003;</span>}
                     </span>
                   </div>
                   <div className="h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
@@ -468,9 +579,19 @@ export default function DashboardPage() {
             })}
           </div>
 
-          {/* Summary */}
-          <div className="pt-3 border-t border-gray-100 dark:border-gray-800 text-sm text-gray-500">
-            {metCount} of {museumReqs.length} requirements met
+          {/* Summary + Found button */}
+          <div className="pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+            <span className="text-sm text-gray-500">
+              {metCount} of {museumReqs.length} requirements met
+            </span>
+            <button
+              type="button"
+              disabled={metCount < museumReqs.length}
+              onClick={() => setShowFoundModal(true)}
+              className="text-sm font-semibold px-4 py-2 rounded-lg bg-[var(--accent-dark)] text-white hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Found Museum
+            </button>
           </div>
         </div>
       </section>
@@ -596,6 +717,84 @@ export default function DashboardPage() {
           </div>
         );
       })()}
+
+      {/* ========== FOUND MUSEUM MODAL ========== */}
+      {showFoundModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowFoundModal(false)}>
+          <div className="bg-white dark:bg-[#1a1a2e] rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold mb-2">Found Your Museum</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              This is an ascension event. Your collection will return to the market and you will begin a fresh run with bonus starting credits.
+            </p>
+            <label className="block text-sm font-medium mb-1">Museum Name</label>
+            <input
+              type="text"
+              value={museumNameInput}
+              onChange={(e) => setMuseumNameInput(e.target.value)}
+              placeholder='e.g. "The Minkoff Museum"'
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm mb-4"
+            />
+            <button
+              type="button"
+              disabled={founding || museumNameInput.trim().length < 3}
+              onClick={async () => {
+                setFounding(true);
+                const res = await fetch("/api/found-museum", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ name: museumNameInput.trim() }),
+                });
+                if (res.ok) {
+                  const data = await res.json();
+                  setShowFoundModal(false);
+                  setAscensionMuseumCount(data.museumCount ?? 1);
+                  setShowAscensionModal(true);
+                } else {
+                  const err = await res.json();
+                  alert(err.error ?? "Failed to found museum");
+                }
+                setFounding(false);
+              }}
+              className="w-full py-2.5 rounded-lg bg-[var(--accent-dark)] text-white font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {founding ? "Founding..." : "Found Museum & Ascend"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowFoundModal(false)}
+              className="mt-2 w-full text-center text-sm text-gray-400 hover:text-gray-600"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ========== ASCENSION SUCCESS MODAL ========== */}
+      {showAscensionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-[#1a1a2e] rounded-xl p-8 max-w-sm w-full mx-4 shadow-xl text-center">
+            <div className="text-5xl mb-4">&#127963;</div>
+            <h3 className="text-xl font-bold mb-2">Museum Founded!</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Your collection has been returned to the market. You have ascended with <strong>{ascensionMuseumCount}</strong> museum{ascensionMuseumCount !== 1 ? "s" : ""} founded.
+            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+              A fresh run begins now with bonus starting credits. A D-tier artwork awaits you.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setShowAscensionModal(false);
+                loadData();
+              }}
+              className="w-full py-2.5 rounded-lg bg-[var(--accent-dark)] text-white font-semibold text-sm hover:opacity-90 transition-opacity"
+            >
+              Begin New Run
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

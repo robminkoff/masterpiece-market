@@ -11,10 +11,12 @@ import { PRNG } from "./prng";
 import {
   SimConfig,
   Tier,
+  TIERS,
   TIERS_CHEAPEST_FIRST,
   TAG_POOL,
   TierConfig,
   PackageDef,
+  Achievement,
 } from "./config";
 
 // ── Types ───────────────────────────────────────────────────────────
@@ -28,6 +30,9 @@ export interface SimArtwork {
   loanWeeksRemaining: number;
   acquiredWeek: number;
   purchaseCost: number; // total cost paid (for flip evaluation)
+  mortgaged: boolean;
+  mortgagePrincipal: number;
+  mortgageWeeksRemaining: number;
 }
 
 export interface SimResult {
@@ -38,6 +43,7 @@ export interface SimResult {
   totalCarryPaid: number;
   topUpSpent: number;
   netWorth: number; // cash + sum(IV) of owned works
+  achievement: Achievement | null; // graduated outcome (null if achievements disabled or no tier reached)
 }
 
 interface PlayerState {
@@ -48,6 +54,7 @@ interface PlayerState {
   topUpUsesByRule: number[]; // per-rule usage count
   topUpSpent: number;
   acquisitionsThisWeek: number; // tracks purchases this week for rate limiting
+  prestige: number;
 }
 
 // ── Weekly carry cost (matches game formula) ────────────────────────
@@ -121,6 +128,9 @@ function tierNeeded(artworks: SimArtwork[], cfg: SimConfig): Record<Tier, number
 // ── Museum founding check ───────────────────────────────────────────
 
 function checkMuseum(state: PlayerState, cfg: SimConfig): boolean {
+  // 0. All mortgages must be cleared
+  if (state.artworks.some((w) => w.mortgaged)) return false;
+
   // 1. Tier composition: 1A + 2B + 3C + 2D minimum
   const needed = tierNeeded(state.artworks, cfg);
   if (needed.A > 0 || needed.B > 0 || needed.C > 0 || needed.D > 0) return false;
@@ -137,6 +147,9 @@ function checkMuseum(state: PlayerState, cfg: SimConfig): boolean {
   const normalCarry = normalWeeklyCarry(state, cfg);
   const endowment = cfg.museum.endowmentWeeks * normalCarry;
   if (state.cash < endowment) return false;
+
+  // 4. Prestige requirement
+  if (cfg.museum.minPrestige > 0 && state.prestige < cfg.museum.minPrestige) return false;
 
   return true;
 }
@@ -174,6 +187,7 @@ export function simulateRun(cfg: SimConfig, rng: PRNG): SimResult {
     topUpUsesByRule: cfg.topUp.rules.map(() => 0),
     topUpSpent: 0,
     acquisitionsThisWeek: 0,
+    prestige: 0,
   };
 
   // ── Starting artwork (gifted at week 0) ──────────────────────────
@@ -191,6 +205,9 @@ export function simulateRun(cfg: SimConfig, rng: PRNG): SimResult {
       loanWeeksRemaining: 0,
       acquiredWeek: 0,
       purchaseCost: 0,
+      mortgaged: false,
+      mortgagePrincipal: 0,
+      mortgageWeeksRemaining: 0,
     });
   }
 
@@ -223,20 +240,30 @@ export function simulateRun(cfg: SimConfig, rng: PRNG): SimResult {
 
     // ── 4. Bankruptcy check ──────────────────────────────────────
     if (state.cash < 0) {
-      return result(state, "bankruptcy");
+      return result(state, cfg, "bankruptcy");
     }
 
     // ── 5. Museum check ──────────────────────────────────────────
     if (checkMuseum(state, cfg)) {
-      return result(state, "museum");
+      return result(state, cfg, "museum");
     }
 
     // ── 6. Top-up strategy ───────────────────────────────────────
     applyTopUps(state, cfg);
 
+    // ── 6b. Process mortgages (interest + repayment) ─────────────
+    if (cfg.mortgage.enabled) {
+      processMortgages(state, cfg);
+    }
+
     // ── 7. Try to get loans ──────────────────────────────────────
     if (cfg.loans.enabled) {
       tryLoans(state, cfg, rng);
+    }
+
+    // ── 7b. Play quiz ────────────────────────────────────────────
+    if (cfg.quiz.enabled) {
+      playQuiz(state, cfg, rng);
     }
 
     // ── 8. Sell if runway is dangerously low ─────────────────────
@@ -244,6 +271,11 @@ export function simulateRun(cfg: SimConfig, rng: PRNG): SimResult {
 
     // ── 9. Acquire new works to fill museum requirements ─────────
     acquireWorks(state, cfg, rng);
+
+    // ── 9b. Try mortgage if runway is low ────────────────────────
+    if (cfg.mortgage.enabled) {
+      tryMortgage(state, cfg, rng);
+    }
 
     // ── 10. Buy surprise packages if enabled ────────────────────
     if (cfg.surprisePackages.enabled) {
@@ -256,7 +288,7 @@ export function simulateRun(cfg: SimConfig, rng: PRNG): SimResult {
     }
   }
 
-  return result(state, "timeout");
+  return result(state, cfg, "timeout");
 }
 
 // ── Step implementations ────────────────────────────────────────────
@@ -285,8 +317,11 @@ function applyTopUps(state: PlayerState, cfg: SimConfig): void {
 }
 
 function tryLoans(state: PlayerState, cfg: SimConfig, rng: PRNG): void {
+  // Track newly loaned works this week for genre bonus
+  const newlyLoaned: { work: SimArtwork; fee: number }[] = [];
+
   for (const w of state.artworks) {
-    if (w.onLoan) continue; // already on loan
+    if (w.onLoan || w.mortgaged) continue; // already on loan or mortgaged
 
     const prob = cfg.tiers[w.tier].loanOfferProb;
     if (!rng.chance(prob)) continue;
@@ -309,6 +344,34 @@ function tryLoans(state: PlayerState, cfg: SimConfig, rng: PRNG): void {
     w.onLoan = true;
     w.loanWeeksRemaining = duration;
     w.idleWeeks = 0;
+    newlyLoaned.push({ work: w, fee });
+  }
+
+  // Genre bonus: extra credit for loaning works sharing a tag in the same week
+  if (cfg.genreBonus.enabled && newlyLoaned.length >= 2) {
+    const tagCounts = new Map<string, { work: SimArtwork; fee: number }[]>();
+    for (const entry of newlyLoaned) {
+      for (const tag of entry.work.tags) {
+        let list = tagCounts.get(tag);
+        if (!list) {
+          list = [];
+          tagCounts.set(tag, list);
+        }
+        list.push(entry);
+      }
+    }
+    // For each tag with 2+ works, apply bonus (avoid double-counting per work)
+    const bonused = new Set<SimArtwork>();
+    let totalBonus = 0;
+    for (const [, entries] of tagCounts) {
+      if (entries.length < 2) continue;
+      for (const entry of entries) {
+        if (bonused.has(entry.work)) continue;
+        bonused.add(entry.work);
+        totalBonus += Math.round(entry.fee * cfg.genreBonus.bonusPerMatch);
+      }
+    }
+    state.cash += totalBonus;
   }
 }
 
@@ -316,9 +379,9 @@ function sellIfNeeded(state: PlayerState, cfg: SimConfig, rng: PRNG): void {
   const threshold = cfg.strategy.sellRunwayThreshold;
 
   while (runway(state, cfg) < threshold && state.artworks.length > 0) {
-    // Find sellable works: not on loan, held >= 1 week
+    // Find sellable works: not on loan, not mortgaged, held >= 1 week
     const sellable = state.artworks.filter(
-      (w) => !w.onLoan && state.week - w.acquiredWeek >= 1,
+      (w) => !w.onLoan && !w.mortgaged && state.week - w.acquiredWeek >= 1,
     );
     if (sellable.length === 0) break;
 
@@ -398,6 +461,9 @@ function acquireWorks(state: PlayerState, cfg: SimConfig, rng: PRNG): void {
         loanWeeksRemaining: 0,
         acquiredWeek: state.week,
         purchaseCost: totalCost,
+        mortgaged: false,
+        mortgagePrincipal: 0,
+        mortgageWeeksRemaining: 0,
       });
       needed[tier]--;
       state.acquisitionsThisWeek++;
@@ -412,7 +478,7 @@ function tryFlips(state: PlayerState, cfg: SimConfig, rng: PRNG): void {
   const toFlip: SimArtwork[] = [];
 
   for (const w of state.artworks) {
-    if (w.onLoan) continue;
+    if (w.onLoan || w.mortgaged) continue;
     const holdWeeks = state.week - w.acquiredWeek;
     if (holdWeeks < 1 || holdWeeks > 4) continue;
 
@@ -494,14 +560,134 @@ function buySurprisePackage(state: PlayerState, cfg: SimConfig, rng: PRNG): void
     loanWeeksRemaining: 0,
     acquiredWeek: state.week,
     purchaseCost: pkg.cost,
+    mortgaged: false,
+    mortgagePrincipal: 0,
+    mortgageWeeksRemaining: 0,
   });
   state.acquisitionsThisWeek++;
 }
 
+// ── Mortgage processing ──────────────────────────────────────────────
+
+function processMortgages(state: PlayerState, cfg: SimConfig): void {
+  const toRemove: SimArtwork[] = [];
+
+  for (const w of state.artworks) {
+    if (!w.mortgaged) continue;
+
+    // Deduct weekly interest
+    const interest = Math.round(w.mortgagePrincipal * cfg.mortgage.weeklyInterestRate);
+    state.cash -= interest;
+    w.mortgageWeeksRemaining--;
+
+    if (w.mortgageWeeksRemaining <= 0) {
+      // Term expired — attempt to repay principal
+      if (state.cash >= w.mortgagePrincipal) {
+        state.cash -= w.mortgagePrincipal;
+        w.mortgaged = false;
+        w.mortgagePrincipal = 0;
+      } else {
+        // Forced sale at dealer rate, mortgage cleared, shortfall absorbed
+        const proceeds = Math.round(w.iv * cfg.fees.dealerBuyRate);
+        state.cash += proceeds - w.mortgagePrincipal;
+        toRemove.push(w);
+      }
+    }
+  }
+
+  if (toRemove.length > 0) {
+    state.artworks = state.artworks.filter((w) => !toRemove.includes(w));
+  }
+}
+
+function tryMortgage(state: PlayerState, cfg: SimConfig, rng: PRNG): void {
+  const rw = runway(state, cfg);
+  if (rw >= cfg.strategy.safetyBufferWeeks) return;
+
+  // Count current mortgages
+  let mortgageCount = state.artworks.filter((w) => w.mortgaged).length;
+  if (mortgageCount >= cfg.mortgage.maxMortgages) return;
+
+  // Find non-mortgaged, non-loaned works — prefer surplus tiers, then highest IV
+  const needed = tierNeeded(state.artworks, cfg);
+  const candidates = state.artworks
+    .filter((w) => !w.mortgaged && !w.onLoan)
+    .map((w) => ({ work: w, surplus: needed[w.tier] <= 0 }))
+    .sort((a, b) => {
+      if (a.surplus !== b.surplus) return a.surplus ? -1 : 1;
+      return b.work.iv - a.work.iv;
+    });
+
+  for (const { work } of candidates) {
+    if (mortgageCount >= cfg.mortgage.maxMortgages) break;
+
+    const loanAmount = Math.round(work.iv * cfg.mortgage.ltvRate);
+    work.mortgaged = true;
+    work.mortgagePrincipal = loanAmount;
+    work.mortgageWeeksRemaining = cfg.mortgage.termWeeks;
+    state.cash += loanAmount;
+    mortgageCount++;
+
+    // Re-check runway after mortgaging
+    if (runway(state, cfg) >= cfg.strategy.safetyBufferWeeks) break;
+  }
+}
+
+// ── Quiz ─────────────────────────────────────────────────────────────
+
+function playQuiz(state: PlayerState, cfg: SimConfig, rng: PRNG): void {
+  for (let i = 0; i < cfg.quiz.timesPerWeek; i++) {
+    if (state.cash < cfg.quiz.entryFee) break; // can't afford entry
+
+    state.cash -= cfg.quiz.entryFee;
+
+    if (rng.chance(cfg.quiz.correctRate)) {
+      // Correct: refund entry fee + earn prestige
+      state.cash += cfg.quiz.entryFee;
+      state.prestige += cfg.quiz.prestigeReward;
+    }
+    // Incorrect: entry fee is lost
+  }
+}
+
+// ── Achievement evaluation ───────────────────────────────────────────
+
+function evaluateAchievement(state: PlayerState, cfg: SimConfig): Achievement | null {
+  if (!cfg.achievements.enabled) return null;
+
+  const counts = tierCounts(state.artworks);
+  const bPlus = counts.A + counts.B; // tier B or above
+  const tags = new Set<string>();
+  for (const w of state.artworks) {
+    for (const t of w.tags) tags.add(t);
+  }
+  const numArt = state.artworks.length;
+  const numTags = tags.size;
+
+  // Check from highest to lowest
+  const w = cfg.achievements.wing;
+  if (numArt >= w.minArtworks && numTags >= w.minTags && bPlus >= w.minBTier && counts.A >= w.minATier) {
+    return "wing";
+  }
+  const g = cfg.achievements.gallery;
+  if (numArt >= g.minArtworks && numTags >= g.minTags && bPlus >= g.minBTier && counts.A >= g.minATier) {
+    return "gallery";
+  }
+  const e = cfg.achievements.exhibition;
+  if (numArt >= e.minArtworks && numTags >= e.minTags && bPlus >= e.minBTier && counts.A >= e.minATier) {
+    return "exhibition";
+  }
+
+  return null;
+}
+
 // ── Result builder ──────────────────────────────────────────────────
 
-function result(state: PlayerState, outcome: SimResult["outcome"]): SimResult {
+function result(state: PlayerState, cfg: SimConfig, outcome: SimResult["outcome"]): SimResult {
   const ivSum = state.artworks.reduce((s, w) => s + w.iv, 0);
+  // If museum is the outcome, that's the top achievement; otherwise evaluate lesser tiers
+  const achievement: Achievement | null =
+    outcome === "museum" ? "museum" : evaluateAchievement(state, cfg);
   return {
     outcome,
     week: state.week,
@@ -510,5 +696,6 @@ function result(state: PlayerState, outcome: SimResult["outcome"]): SimResult {
     totalCarryPaid: state.totalCarryPaid,
     topUpSpent: state.topUpSpent,
     netWorth: state.cash + ivSum,
+    achievement,
   };
 }

@@ -4,11 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import type { EnrichedArtwork, ProvenanceEvent, NpcRole, Ownership } from "@/lib/types";
-import { TIER_CONFIG, weeklyCarryCost } from "@/lib/types";
+import { TIER_CONFIG, weeklyCarryCost, GENRE_BONUS_RATE, GENRE_BONUS_MIN_WORKS } from "@/lib/types";
 import { ArtFrame } from "@/components/ArtFrame";
 import { GalleryNotes } from "@/components/GalleryNotes";
 import { SellOptionsPanel } from "@/components/SellOptionsPanel";
 import { BuyFromDealerPanel } from "@/components/BuyFromDealerPanel";
+import { MortgagePanel } from "@/components/MortgagePanel";
 
 const ROLE_BADGE: Record<NpcRole, { label: string; className: string }> = {
   curator: { label: "Curator", className: "bg-purple-100 text-purple-700" },
@@ -38,6 +39,7 @@ export default function ArtworkDetailPage() {
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [userArtworks, setUserArtworks] = useState<EnrichedArtwork[]>([]);
 
   const closeLightbox = useCallback(() => setLightbox(false), []);
 
@@ -50,12 +52,22 @@ export default function ArtworkDetailPage() {
     return () => document.removeEventListener("keydown", onKey);
   }, [lightbox, closeLightbox]);
 
-  // Fetch the authenticated user's ID
+  // Fetch the authenticated user's ID and all artworks (for genre bonus check)
   useEffect(() => {
     fetch("/api/account")
       .then((r) => r.json())
       .then((data) => {
-        if (data.profile?.id) setCurrentUserId(data.profile.id);
+        const uid = data.profile?.id;
+        if (uid) {
+          setCurrentUserId(uid);
+          // Fetch all artworks to find user-owned ones for genre bonus
+          fetch("/api/artworks")
+            .then((r) => r.json())
+            .then((artData) => {
+              const all = (artData.artworks ?? []) as EnrichedArtwork[];
+              setUserArtworks(all.filter((a) => a.owner?.owner_id === uid));
+            });
+        }
       })
       .catch(() => {});
   }, []);
@@ -192,6 +204,31 @@ export default function ArtworkDetailPage() {
               />
             </div>
           )}
+
+          {/* MortgagePanel — shown for user-owned artworks */}
+          {isOwnedByUser && (
+            <div className="mt-6">
+              <MortgagePanel artworkId={artwork.id} artworkIv={artwork.insured_value} onLoan={!!loan} onUpdate={fetchData} />
+            </div>
+          )}
+
+          {/* Genre Bonus callout — shown for user-owned, not-on-loan artworks */}
+          {isOwnedByUser && !loan && (() => {
+            const loanedArtworks = userArtworks.filter((a) => a.loan && a.id !== artwork.id);
+            const loanedTags = new Set(loanedArtworks.flatMap((a) => a.tags ?? []));
+            const matchingTags = artwork.tags.filter((t) => loanedTags.has(t));
+            if (matchingTags.length === 0) return null;
+            return (
+              <div className="mt-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                  Genre Bonus eligible
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                  Loaning this work would trigger a <strong>+{GENRE_BONUS_RATE * 100}%</strong> loan fee bonus — it shares {matchingTags.length > 1 ? "tags" : "a tag"} ({matchingTags.join(", ")}) with {loanedArtworks.filter((a) => a.tags?.some((t) => matchingTags.includes(t))).length} currently loaned {loanedArtworks.filter((a) => a.tags?.some((t) => matchingTags.includes(t))).length === 1 ? "work" : "works"}.
+                </p>
+              </div>
+            );
+          })()}
 
           {/* Current Location — shown when artwork is on loan */}
           {loan && (

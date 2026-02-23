@@ -2,22 +2,17 @@
 
 ## Welcome
 
-You are an art collector navigating a living, competitive market. Acquire masterworks at auction, manage your collection's costs, cultivate relationships with curators, and outwit rival collectors — all in pursuit of the most prestigious portfolio in the game.
+You are an art collector navigating a living, competitive market. Acquire masterworks at auction, manage your collection's costs, cultivate relationships with curators, and build toward founding your own museum.
 
 ## Object of the Game
 
-Build the most prestigious art collection while maintaining financial solvency. Prestige is measured by:
-
-- **Net Worth** — The combined value of your credits and collection.
-- **Stewardship Score** — How actively you manage your artworks (loans, exhibitions, provenance care).
-- **Curator Relationships** — The depth of your partnerships with in-game curators.
-- **Progression Tier** — Your rank among collectors (Beginner, Mid-Tier, Whale).
+Build a collection worthy of founding a museum — or climb as high as you can through the achievement tiers. Every run ends with a result: Hall, Gallery, Wing, or Museum.
 
 ## Setup / Getting Started
 
-- Each new player starts with **10,000 credits**.
-- All players begin at the **Beginner** tier.
-- The art market is **persistent and shared** across all players — artworks bought, sold, and loaned exist in a single living economy.
+- Each new player starts with **1,000,000 credits** and **one D-tier artwork**.
+- All players begin at the **Emerging** tier.
+- The art market is **persistent and shared** across all players.
 
 ---
 
@@ -25,210 +20,211 @@ Build the most prestigious art collection while maintaining financial solvency. 
 
 ### Credits
 
-Credits are the currency of Masterpiece Market.
+Credits are the only currency of Masterpiece Market.
 
-- **Earned by:** selling artworks at auction, collecting loan fees from curators, completing dealer deals.
-- **Spent on:** auction bids, weekly carry costs (insurance premiums + storage fees).
+- **Earned by:** loan fees from curators, selling artworks, genre bonuses.
+- **Spent on:** auction bids, dealer purchases, mystery packages, weekly carry costs, mortgage interest.
 
-Guard your credit balance carefully. Running out has consequences (see Delinquency Rules).
+Guard your credit balance carefully. Running out ends your run.
 
 ### Artworks
 
-Each artwork in the game is unique and defined by:
+Each artwork is unique and defined by:
 
 - **Insured Value (IV)** — Its official appraised worth.
-- **Tier** — A quality classification (A, B, C, or D).
-- **Provenance History** — A permanent, visible record of every owner and major event.
+- **Tier** — A quality classification (A, B, C, or D) derived from IV.
+- **Tags** — Genre/style labels (e.g. impressionist, portrait, landscape).
 
-| Tier | Description |
-|------|-------------|
-| **A** | Iconic masterpiece |
-| **B** | Major work |
-| **C** | Mid-tier piece |
-| **D** | Edition / minor work |
+| Tier | IV Range | Description |
+|------|----------|-------------|
+| **A** | ≥ 350,000 cr | Iconic masterpiece |
+| **B** | ≥ 75,000 cr | Major work |
+| **C** | ≥ 50,000 cr | Mid-tier piece |
+| **D** | < 50,000 cr | Edition / minor work |
 
-### Insured Value (IV)
+### Expertise
 
-The Insured Value is the official appraised value of an artwork. It determines:
-
-- Your weekly insurance premium.
-- Storage fees charged against the work.
-- Loan fees earned when lending to curators.
-
-IV may be adjusted over time by market events.
+Expertise measures your knowledge of and engagement with the art world. It is primarily earned through the **Daily Quiz** (1 point per correct answer, available 7 days a week). A minimum expertise of **10** is required to found a museum.
 
 ---
 
 ## How to Play
 
-### Attending Auctions
+### 1. Browse the Catalog
 
-1. Browse upcoming auctions in the **Auction House**.
-2. Join a live auction room when the auction starts.
-3. Place bids above the current highest bid (a minimum increment applies).
-4. Auctions have a **countdown timer**. Late bids placed in the final seconds extend the timer by **15 seconds**.
-5. The **highest bidder** when the timer expires wins the lot.
-6. The winner's credits are debited immediately and artwork ownership transfers on the spot.
-7. A **provenance event** is recorded on the artwork's history.
+The Catalog shows all works and their current owners.
 
-> **Example:** The auction for "Starry Night" (IV: 600,000) opens at 300,000. You bid 310,000. Another player bids 320,000. You bid 350,000 with 5 seconds left — the timer extends by 15 seconds. No further bids arrive. You win at 350,000 credits.
+### 2. Acquire Artworks
+
+There are three ways to acquire artworks:
+
+- **Bid in auctions** — Browse upcoming auctions, join live bidding, win lots. Late bids extend the timer by **15 seconds**.
+- **Buy from dealer inventory** — Purchase available works directly at the listed price.
+- **Mystery packages** — Buy for 100,000 cr, receive a random artwork (weighted: 20% D, 35% C, 35% B, 10% A).
+
+> **Acquisition Limit:** You may acquire at most **1 artwork per week** through dealer purchases and mystery packages. Auction wins are not subject to this limit.
+
+### 3. Hold and Manage Your Collection
+
+Owning art costs credits every week. Maintain enough credits to cover your burn.
+
+### 4. Loan to Curators
+
+Loan works to curators for 4–12 week exhibitions. While on loan:
+- Premium is **reduced by 70%**
+- Curator pays you a **loan fee** (see table below)
+- Idle counter resets
+
+### 5. Take the Daily Quiz
+
+Answer an art-knowledge question each day. Correct answers earn **1 expertise**. Free to take.
+
+### 6. Sell
+
+- **Consign to auction** — Market outcome; potentially the best price, but risky.
+- **Direct sell to dealer** — Instant sale at **50% of IV**. Guaranteed liquidity.
 
 ---
 
-### Paying Weekly Costs
+## Ownership Costs
 
-Every week (game time), each artwork you own generates a bill.
+### Weekly Carry
 
-**Weekly Cost = (IV × premium_rate) + storage_fee**
+Each owned work costs credits every week:
 
-| Tier | Premium Rate (per week) | Storage Fee (per week) |
-|------|------------------------|----------------------|
-| A (Iconic) | 0.60% of IV | 200 credits |
-| B (Major) | 0.35% of IV | 80 credits |
-| C (Mid) | 0.20% of IV | 25 credits |
-| D (Edition) | 0.08% of IV | 5 credits |
+**Weekly Carry = (IV × Premium Rate) + Storage Fee**
 
-Bills are **automatically deducted** from your credit balance each week.
-
-> **Example:** You own "Mona Lisa" (Tier A, IV: 1,000,000).
-> Weekly cost = (1,000,000 × 0.006) + 200 = 6,000 + 200 = **6,200 credits/week**.
-
----
+| Tier | Premium Rate | Storage Fee | Example (IV = 100k) |
+|------|-------------|-------------|-------------------|
+| A | 1.50% / wk | 1,000 cr | — |
+| B | 1.00% / wk | 400 cr | — |
+| C | 0.75% / wk | 100 cr | 850 cr/wk |
+| D | 0.50% / wk | 20 cr | — |
 
 ### Idle Surcharge
 
-If you take **no qualifying action** (loan, list for sale, exhibit) with an artwork for **8 consecutive weeks**, its insurance premium increases by **20%**.
+If an artwork sits idle for **8 consecutive weeks** (no loan, no sale, no exhibition), its premium increases by **20%**. Any qualifying activity resets the counter.
 
-- Any qualifying activity resets the idle counter to zero.
-- The surcharge does not stack — capped at +20%.
+### Loan Premium Reduction
 
-> **Example:** Your Tier B artwork normally costs 0.35%/wk in premium. After 8 idle weeks, the premium rises to 0.35% × 1.20 = **0.42%/wk** until you take action with that piece.
-
----
-
-### Loaning to Curators
-
-Curators are in-game characters who request to borrow artworks for **2-week exhibitions**.
-
-**Benefits of loaning:**
-
-- Your insurance premium on the loaned work is **reduced by 70%** (you pay only 30% of the normal premium) for the duration of the loan.
-- The curator pays you a **loan fee** based on their tier.
-- Loans count as activity and **reset the idle counter**.
-
-| Curator Tier | Loan Fee (% of IV per 2-week exhibition) |
-|-------------|----------------------------------------|
-| Assistant (Tier 1) | 0.25% |
-| Curator (Tier 2) | 0.45% |
-| Chief (Tier 3) | 0.75% |
-| Legendary | 1.20% |
-
-Higher-tier curators are **pickier** about which works they will accept. Building relationships over time unlocks access to the most prestigious exhibitions.
-
-> **Example:** You loan "Starry Night" (IV: 600,000) to Dr. Celeste Armand (Curator tier).
-> - Loan fee earned: 600,000 × 0.0045 = **2,700 credits**.
-> - During the 2-week loan, your weekly premium drops from 0.35% to 0.105% (30% of 0.35%).
+While on loan, the premium is reduced by **70%** (you pay only 30% of the normal rate).
 
 ---
 
-### Dealing with Dealers
+## Curator Loan Fees
 
-Six dealers operate in Masterpiece Market:
+Curators pay a one-time fee when borrowing your artwork:
 
-1. **Galleria North** (Primary Market) — New listings at fair prices.
-2. **Bram & Co.** (Secondary Market) — Resale marketplace with variable pricing.
-3. **The Private Room** (Broker) — Private sales between collectors. Requires Whale tier.
-4. **Restoration House** — Provenance research and condition reports. Mid tier.
-5. **Hearthstone Advisory** — Collection strategy advice. Mid tier.
-6. **Night Market** — Grey market. Risky but profitable. Throttled access. Whale tier.
+| Curator Tier | Loan Fee (% of IV) |
+|-------------|-------------------|
+| Assistant | 1.0% |
+| Curator | 2.0% |
+| Chief | 3.5% |
+| Legendary | 5.0% |
 
----
+### Genre Bonus
 
-### Delinquency Rules
-
-If your credits cannot cover your weekly bill:
-
-1. You enter a **72-hour grace period**.
-2. During the grace period, sell artworks, arrange loans, or otherwise raise credits.
-3. After 72 hours unpaid, a **forced auction** begins:
-   - The system selects your **lowest-tier works first** for consignment.
-   - Selected works are automatically placed into auction.
-   - Auction proceeds cover your debt **first**; any remainder returns to you.
-4. While delinquent, you **cannot bid** in any other auctions.
-
-> **Example:** Your weekly bill is 8,000 credits but you only have 2,000. Grace period starts. After 72 hours, your Tier D artwork (IV: 5,000) is auto-consigned and sells for 4,500. Debt remaining: 8,000 - 2,000 - 4,500 = 1,500. Another work is consigned until debt is cleared.
+When you loan 2+ artworks sharing a tag in the same week, you earn a **+50% bonus** on the loan fee for each matching work. Building thematic collections is financially rewarded.
 
 ---
 
-### Inactivity Rules
+## Mortgage
 
-1. **30 days** no login/action — **Estate Notice** sent.
-2. **60 days** inactive — **Estate Auction** triggered.
-   - **Exception:** Credits cover **8 weeks of total carry costs** → holdings preserved.
-3. Estate Auction: **entire collection** auctioned to other players.
-4. Proceeds held for **90 days** for the player to claim.
-5. After 90 days unclaimed, proceeds **forfeited to market pool**.
+When your runway is low, mortgage an artwork to raise cash without selling:
 
----
+- **Borrow:** up to 50% of artwork IV
+- **Interest:** 2% of principal per week
+- **Term:** 12 weeks
+- **Limit:** 2 mortgages at a time
 
-## Progression Tiers
-
-### Beginner
-
-Starting tier for all players.
-
-- **Access to:** Regular auctions, Galleria North, Bram & Co.
-- **Commissions:** Standard dealer rates.
-
-### Mid-Tier
-
-**Requirements (all must be met):**
-- Own **5+** artworks.
-- Complete **3+** curator loans.
-- Net worth **50,000+** credits.
-
-**Unlocks:** Evening Sales, Restoration House, Hearthstone Advisory, -5% commissions.
-
-### Whale
-
-**Requirements (all must be met):**
-- **Stewardship:** 10+ completed loans/exhibitions in last 90 days.
-- **Prestige:** Relationship level 3+ with at least 2 curators.
-- **Net Worth:** 500,000+ credits (collection value + balance).
-
-**Unlocks:** Private auctions, The Private Room, Night Market, ability to underwrite auctions, -15% commissions.
-
-> **Key Principle:** Whale requires active stewardship and relationships, not just wealth.
+If you can't repay at term end, the artwork is sold at dealer rate to settle the debt. Mortgaged works cannot be loaned. All mortgages must be cleared before founding a museum.
 
 ---
 
-## Quick Reference Card
+## Auctions
 
-### Weekly Carry Costs
+### Bidding
 
-| Tier | Premium/wk | Storage/wk | Example IV | Example Weekly Cost |
-|------|-----------|------------|------------|-------------------|
-| A (Iconic) | 0.60% | 200 | 1,000,000 | 6,200 |
-| B (Major) | 0.35% | 80 | 200,000 | 780 |
-| C (Mid) | 0.20% | 25 | 50,000 | 125 |
-| D (Edition) | 0.08% | 5 | 5,000 | 9 |
+Auctions have a countdown timer. Late bids in the final seconds extend the timer by **15 seconds**. A **5% buyer premium** and **2.5% seller fee** apply at settlement.
 
-### Curator Loan Fees
+### Dealer Backstop
 
-| Curator Tier | Fee (% of IV per 2-wk exhibition) |
-|-------------|----------------------------------|
-| Assistant (T1) | 0.25% |
-| Curator (T2) | 0.45% |
-| Chief (T3) | 0.75% |
-| Legendary | 1.20% |
+Each lot has a backstop: **25% of IV**. If the high bid falls short or there are no bids, the dealer buys in at the backstop amount.
 
-### Progression at a Glance
+---
 
-| Tier | Artworks | Loans | Net Worth | Special |
-|------|----------|-------|-----------|---------
-| Beginner | — | — | — | Starting tier |
-| Mid-Tier | 5+ | 3+ | 50,000+ | — |
-| Whale | — | 10+ (90d) | 500,000+ | 2 curators at lvl 3+ |
+## Achievement Tiers
+
+When your run ends, you receive the highest tier you qualify for:
+
+| Achievement | Requirements |
+|-------------|-------------|
+| **Hall** | 2+ artworks, 2+ tags |
+| **Gallery** | 4+ artworks, 3+ tags, 1+ B-tier |
+| **Wing** | 6+ artworks, 4+ tags, 2+ B-tier, 1+ A-tier |
+| **Museum** | Full founding requirements (see below) |
+
+There is no "bankruptcy" — just "your journey ended and here's what you built."
+
+---
+
+## Museum Founding Requirements
+
+To found a museum, you must meet **all** of the following:
+
+| Requirement | Threshold |
+|-------------|-----------|
+| A-tier artworks | 1+ |
+| B-tier artworks | 1+ |
+| C-tier artworks | 2+ |
+| D-tier artworks | 4+ |
+| Total artworks | 8+ |
+| Tag diversity | 5+ unique tags |
+| Expertise | 10+ |
+| Endowment | 6 weeks of carry costs in cash |
+| Mortgages | All cleared |
+
+### Ascension
+
+Founding a museum is an **ascension event**. Your collection returns to the market through a Founding Sale, and you begin a fresh run. The museum is your permanent legacy.
+
+### Museum Founder Bonus
+
+- **+250,000 cr** per museum founded (added to next run's starting credits)
+- **Maximum: 9 museums** (2,250,000 cr bonus cap)
+
+---
+
+## Quick Reference
+
+### Carry Costs
+
+| Tier | Premium/wk | Storage/wk |
+|------|-----------|------------|
+| A | 1.50% | 1,000 cr |
+| B | 1.00% | 400 cr |
+| C | 0.75% | 100 cr |
+| D | 0.50% | 20 cr |
+
+### Key Numbers
+
+| Parameter | Value |
+|-----------|-------|
+| Starting credits | 1,000,000 cr |
+| Starting artwork | 1 D-tier |
+| Max acquisitions/week | 1 (dealer + packages) |
+| Loan premium reduction | 70% |
+| Idle surcharge | +20% after 8 weeks |
+| Dealer direct sale | 50% of IV |
+| Auction backstop | 25% of IV |
+| Buyer premium | 5% |
+| Seller fee | 2.5% |
+| Mystery package | 100,000 cr |
+| Quiz expertise reward | 1 per correct |
+| Mortgage LTV | 50% of IV |
+| Mortgage interest | 2%/week |
+| Museum endowment | 6 weeks carry |
+| Museum expertise min | 10 |
 
 ---
 
@@ -238,11 +234,14 @@ Starting tier for all players.
 - **Premium** — Weekly insurance cost as a percentage of IV.
 - **Storage** — Flat weekly fee for housing an artwork.
 - **Carry Cost** — Premium + Storage. Total weekly ownership cost.
+- **Burn** — Your total weekly carry across all owned works.
+- **Runway** — Weeks your cash can sustain your current burn.
+- **Expertise** — Knowledge score earned through the Daily Quiz.
+- **Genre Bonus** — Extra loan fee income for thematic collections.
+- **Mortgage** — Borrowing against an artwork's IV for cash.
 - **Provenance** — Documented chain of ownership and events.
-- **Consignment** — Placing an artwork up for auction.
-- **Grace Period** — 72-hour window to resolve unpaid bills.
-- **Estate Auction** — Full collection liquidation after 60 days inactive.
-- **Stewardship** — Active engagement with your collection.
+- **Backstop** — Dealer buy-in price when auction bids are insufficient.
 - **Idle Surcharge** — 20% premium increase after 8 idle weeks.
-- **Forced Auction** — Auto-consignment of works to cover debts.
-- **Underwrite** — Sponsor an auction lot (Whale tier only).
+- **Achievement Tier** — Your rank at run end (Exhibition → Gallery → Wing → Museum).
+- **Endowment** — Cash reserve locked to sustain museum operations.
+- **Ascension** — Founding a museum and starting a fresh run.

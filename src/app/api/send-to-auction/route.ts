@@ -5,6 +5,7 @@ import {
   getActiveOwnership,
   getAuctions,
   createAuction,
+  getActiveMortgageForArtwork,
 } from "@/lib/db";
 import { AUCTION_BACKSTOP_RATE, canResell } from "@/lib/types";
 
@@ -41,6 +42,12 @@ export async function POST(request: NextRequest) {
   }
   if (!canResell(ownership.acquired_at)) {
     return NextResponse.json({ error: "24-hour hold period has not elapsed" }, { status: 400 });
+  }
+
+  // Check if artwork is mortgaged
+  const mortgage = await getActiveMortgageForArtwork(artwork_id);
+  if (mortgage) {
+    return NextResponse.json({ error: "Cannot auction a mortgaged artwork. Repay the mortgage first." }, { status: 400 });
   }
 
   // Check for existing active auction

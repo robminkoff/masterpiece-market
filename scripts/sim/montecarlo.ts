@@ -68,6 +68,12 @@ interface ScenarioStats {
   museumWeeks: number[];    // week values for museum outcomes
   bankruptWeeks: number[];  // week values for bankruptcy outcomes
   nw52: number[];           // net worth at week 52 for non-bankrupt-before-52
+  // Achievement tier counts (when enabled)
+  achievementsEnabled: boolean;
+  wingCount: number;
+  galleryCount: number;
+  exhibitionCount: number;
+  noneCount: number; // ran out with nothing to show
 }
 
 function runScenario(
@@ -84,6 +90,11 @@ function runScenario(
     museumWeeks: [],
     bankruptWeeks: [],
     nw52: [],
+    achievementsEnabled: cfg.achievements.enabled,
+    wingCount: 0,
+    galleryCount: 0,
+    exhibitionCount: 0,
+    noneCount: 0,
   };
 
   for (let i = 0; i < runs; i++) {
@@ -106,6 +117,16 @@ function runScenario(
         stats.nw52.push(r.netWorth);
         break;
     }
+
+    // Track achievement tiers
+    if (cfg.achievements.enabled && r.outcome !== "museum") {
+      switch (r.achievement) {
+        case "wing":       stats.wingCount++; break;
+        case "gallery":    stats.galleryCount++; break;
+        case "exhibition": stats.exhibitionCount++; break;
+        default:           stats.noneCount++; break;
+      }
+    }
   }
 
   return stats;
@@ -127,20 +148,26 @@ function printHeader(runs: number, maxWeeks: number, seed: number, tuneInfo?: st
 }
 
 function printTable(scenarios: ScenarioStats[]): void {
+  const hasAchievements = scenarios.some((s) => s.achievementsEnabled);
+
   // Dynamic name column width
   const nameWidth = Math.max(22, ...scenarios.map((s) => s.name.length + 1));
 
   // Column headers
-  const header = [
+  const cols = [
     "Scenario".padEnd(nameWidth),
     "Museum%".padStart(8),
     "P10".padStart(5),
     "P50".padStart(5),
     "P90".padStart(5),
-    "Bankr%".padStart(8),
-    "Bk P50".padStart(7),
-    "NW@52".padStart(8),
-  ].join("  ");
+  ];
+  if (hasAchievements) {
+    cols.push("Wing%".padStart(7), "Gall%".padStart(7), "Exhb%".padStart(7), "None%".padStart(7));
+  } else {
+    cols.push("Bankr%".padStart(8), "Bk P50".padStart(7));
+  }
+  cols.push("NW@52".padStart(8));
+  const header = cols.join("  ");
 
   console.log("  " + header);
   console.log("  " + "─".repeat(header.length));
@@ -150,34 +177,49 @@ function printTable(scenarios: ScenarioStats[]): void {
     const mP10 = s.museumWeeks.length > 0 ? String(p10(s.museumWeeks)) : "—";
     const mP50 = s.museumWeeks.length > 0 ? String(median(s.museumWeeks)) : "—";
     const mP90 = s.museumWeeks.length > 0 ? String(p90(s.museumWeeks)) : "—";
-    const bankPct = pct(s.bankruptCount, s.total);
-    const bP50 =
-      s.bankruptWeeks.length > 0 ? String(median(s.bankruptWeeks)) : "—";
     const nw = s.nw52.length > 0 ? fmtK(median(s.nw52)) : "—";
 
-    const row = [
+    const rowCols = [
       s.name.padEnd(nameWidth),
       museumPct.padStart(8),
       mP10.padStart(5),
       mP50.padStart(5),
       mP90.padStart(5),
-      bankPct.padStart(8),
-      bP50.padStart(7),
-      nw.padStart(8),
-    ].join("  ");
+    ];
 
-    console.log("  " + row);
+    if (hasAchievements) {
+      rowCols.push(
+        pct(s.wingCount, s.total).padStart(7),
+        pct(s.galleryCount, s.total).padStart(7),
+        pct(s.exhibitionCount, s.total).padStart(7),
+        pct(s.noneCount, s.total).padStart(7),
+      );
+    } else {
+      const bankPct = pct(s.bankruptCount, s.total);
+      const bP50 = s.bankruptWeeks.length > 0 ? String(median(s.bankruptWeeks)) : "—";
+      rowCols.push(bankPct.padStart(8), bP50.padStart(7));
+    }
+    rowCols.push(nw.padStart(8));
+
+    console.log("  " + rowCols.join("  "));
   }
 
   console.log();
 }
 
-function printLegend(): void {
+function printLegend(hasAchievements: boolean): void {
   console.log("  Legend:");
   console.log("    Museum%  = % of runs that founded a museum");
   console.log("    P10/P50/P90 = weeks to museum (10th/50th/90th percentile)");
-  console.log("    Bankr%   = % of runs ending in bankruptcy");
-  console.log("    Bk P50   = median week of bankruptcy");
+  if (hasAchievements) {
+    console.log("    Wing%    = % ending with a Wing (next below Museum)");
+    console.log("    Gall%    = % ending with a Gallery");
+    console.log("    Exhb%    = % ending with an Exhibition Hall");
+    console.log("    None%    = % ending with no achievement");
+  } else {
+    console.log("    Bankr%   = % of runs ending in bankruptcy");
+    console.log("    Bk P50   = median week of bankruptcy");
+  }
   console.log("    NW@52    = median net worth at week 52 (survivors + museum founders)");
   console.log();
 }
@@ -214,9 +256,11 @@ function main(): void {
     allStats.push(stats);
   }
 
+  const hasAchievements = allStats.some((s) => s.achievementsEnabled);
+
   console.log();
   printTable(allStats);
-  printLegend();
+  printLegend(hasAchievements);
 }
 
 main();

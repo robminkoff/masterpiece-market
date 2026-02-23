@@ -9,7 +9,7 @@ export default function Home() {
 
       <p className="text-lg max-w-xl text-gray-600 dark:text-gray-400">
         Collect iconic artworks. Bid in live auctions. Manage insurance, loans,
-        and prestige. Build a legendary collection — or lose it all to carrying
+        and expertise. Build a legendary collection — or lose it all to carrying
         costs.
       </p>
 

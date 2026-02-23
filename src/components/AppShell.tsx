@@ -110,6 +110,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <Link href="/museum" className="hover:text-[var(--accent-dark)] transition-colors whitespace-nowrap">
               Museums
             </Link>
+            <Link href="/quiz" className="hover:text-[var(--accent-dark)] transition-colors whitespace-nowrap">
+              Quiz
+            </Link>
             <Link href="/rules" className="hover:text-[var(--accent-dark)] transition-colors whitespace-nowrap">
               Rules
             </Link>

@@ -14,7 +14,7 @@ export default function RulesPage() {
           responsibility of ownership.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The central tension: <strong>prestige vs responsibility</strong>. The
+          The central tension: <strong>expertise vs responsibility</strong>. The
           more valuable the work, the harder it is to keep.
         </p>
       </section>
@@ -34,6 +34,7 @@ export default function RulesPage() {
         <ul className="list-disc pl-6 text-gray-600 dark:text-gray-300 space-y-1 mb-4">
           <li>Bid in auctions</li>
           <li>Buy from dealer inventory</li>
+          <li>Buy mystery packages</li>
           <li>Pay weekly ownership costs</li>
           <li>Survive downturns and mistakes</li>
         </ul>
@@ -44,8 +45,10 @@ export default function RulesPage() {
         </p>
         <ul className="list-disc pl-6 text-gray-600 dark:text-gray-300 space-y-1 mb-2">
           <li>Weekly ownership cost (&ldquo;burn&rdquo;)</li>
+          <li>Loan fees earned from curators</li>
           <li>Dealer backstop amount for unsold auction lots (25% of IV)</li>
           <li>Dealer direct-sale amount (50% of IV)</li>
+          <li>Mortgage borrowing amount (50% of IV)</li>
         </ul>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           IV is initially seeded and may be adjusted conservatively as the market
@@ -115,24 +118,18 @@ export default function RulesPage() {
         </p>
       </section>
 
-      {/* ====== Prestige and Stewardship ====== */}
+      {/* ====== Expertise ====== */}
       <section className="mb-10">
-        <h2 className="text-xl font-semibold mb-3">Prestige and Stewardship</h2>
+        <h2 className="text-xl font-semibold mb-3">Expertise</h2>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-2">
-          Two scores track your standing as a collector:
+          Expertise measures your knowledge of and engagement with the art world.
+          It is primarily earned through the <strong>Daily Quiz</strong>.
         </p>
-        <ul className="list-disc pl-6 text-gray-600 dark:text-gray-300 space-y-2">
-          <li>
-            <strong>Prestige</strong> &mdash; Your reputation in the art world.
-            Built through acquisitions, exhibitions, and market activity.
-          </li>
-          <li>
-            <strong>Stewardship</strong> &mdash; Your track record as a
-            responsible owner. Paying obligations on time, making loans, and
-            participating in exhibitions improve it. Delinquencies damage it.
-            Stewardship is required for museum founding.
-          </li>
-        </ul>
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+          A minimum expertise score of <strong>10</strong> is required to found a
+          museum. This ensures collectors engage with the educational content
+          over the course of their journey.
+        </p>
       </section>
 
       {/* ====== How You Play ====== */}
@@ -146,7 +143,7 @@ export default function RulesPage() {
 
         <h3 className="font-semibold mt-4 mb-2">2. Acquire Artworks</h3>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-1">
-          There are two ways to acquire artworks:
+          There are three ways to acquire artworks:
         </p>
         <ul className="list-disc pl-6 text-gray-600 dark:text-gray-300 space-y-2 mb-3">
           <li>
@@ -159,10 +156,20 @@ export default function RulesPage() {
             Marketplace to purchase available works directly from dealers at
             their listed price.
           </li>
+          <li>
+            <strong>Mystery packages</strong> &mdash; Buy a mystery package
+            for 100,000 cr and receive a random artwork. The tier is weighted
+            toward C and B, with a chance at an A-tier masterpiece.
+          </li>
         </ul>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-3 font-medium bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 px-4 py-2 rounded-lg">
           Acquisition Limit: You may acquire at most <strong>1 artwork per week</strong> through
           dealer purchases and mystery packages. Auction wins are not subject to this limit.
+        </p>
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-3">
+          You start with <strong>one D-tier artwork</strong> in your collection
+          so you can see carry costs, loan offers, and the collection UI from
+          day one.
         </p>
 
         <h3 className="font-semibold mt-4 mb-2">3. Hold and Manage Your Collection</h3>
@@ -175,12 +182,20 @@ export default function RulesPage() {
         <h3 className="font-semibold mt-4 mb-2">4. Loan to Curators</h3>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-3">
           You may loan works to curators for their exhibitions. While on loan,
-          an artwork&rsquo;s weekly insurance premium is significantly reduced,
+          an artwork&rsquo;s weekly insurance premium is <strong>reduced by 70%</strong>,
           and the curator pays you a loan fee. This is the primary way to offset
           carry costs on expensive works.
         </p>
 
-        <h3 className="font-semibold mt-4 mb-2">5. Sell</h3>
+        <h3 className="font-semibold mt-4 mb-2">5. Take the Daily Quiz</h3>
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-3">
+          Each day you can answer an art-knowledge quiz question. Correct answers
+          earn <strong>1 expertise point</strong>. The quiz is free to take and
+          available 7 days a week. Expertise accumulation is required for museum
+          founding.
+        </p>
+
+        <h3 className="font-semibold mt-4 mb-2">6. Sell</h3>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-1">
           You can sell in two ways:
         </p>
@@ -216,31 +231,112 @@ export default function RulesPage() {
             <thead className="bg-gray-50 dark:bg-gray-900">
               <tr>
                 <th className="text-left p-3 font-medium text-gray-500">Tier</th>
-                <th className="text-left p-3 font-medium text-gray-500">IV Threshold</th>
+                <th className="text-left p-3 font-medium text-gray-500">IV Range</th>
+                <th className="text-left p-3 font-medium text-gray-500">Premium Rate</th>
+                <th className="text-left p-3 font-medium text-gray-500">Storage Fee</th>
               </tr>
             </thead>
             <tbody className="text-gray-600 dark:text-gray-300">
               <tr className="border-t border-gray-100 dark:border-gray-800">
                 <td className="p-3 font-semibold">A</td>
                 <td className="p-3">&ge; 350,000 cr</td>
+                <td className="p-3">1.50% / wk</td>
+                <td className="p-3">1,000 cr</td>
               </tr>
               <tr className="border-t border-gray-100 dark:border-gray-800">
                 <td className="p-3 font-semibold">B</td>
                 <td className="p-3">&ge; 75,000 cr</td>
+                <td className="p-3">1.00% / wk</td>
+                <td className="p-3">400 cr</td>
               </tr>
               <tr className="border-t border-gray-100 dark:border-gray-800">
                 <td className="p-3 font-semibold">C</td>
                 <td className="p-3">&ge; 50,000 cr</td>
+                <td className="p-3">0.75% / wk</td>
+                <td className="p-3">100 cr</td>
               </tr>
               <tr className="border-t border-gray-100 dark:border-gray-800">
                 <td className="p-3 font-semibold">D</td>
                 <td className="p-3">&lt; 50,000 cr</td>
+                <td className="p-3">0.50% / wk</td>
+                <td className="p-3">20 cr</td>
               </tr>
             </tbody>
           </table>
         </div>
+
+        <h3 className="font-semibold mt-4 mb-2">Idle Surcharge</h3>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Exact rates per tier can be viewed on any artwork&rsquo;s detail page.
+          If an artwork sits idle (not loaned, not exhibited) for <strong>8
+          consecutive weeks</strong>, its premium rate increases by 20%. Any
+          qualifying activity resets the counter.
+        </p>
+      </section>
+
+      {/* ====== Curator Loans ====== */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-3">Curator Loans</h2>
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-3">
+          Curators request to borrow artworks for exhibitions lasting 4&ndash;12
+          weeks. While on loan, your premium is <strong>reduced by 70%</strong> and
+          you earn a loan fee based on the curator&rsquo;s tier.
+        </p>
+        <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden mb-3">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 dark:bg-gray-900">
+              <tr>
+                <th className="text-left p-3 font-medium text-gray-500">Curator Tier</th>
+                <th className="text-left p-3 font-medium text-gray-500">Loan Fee (% of IV)</th>
+              </tr>
+            </thead>
+            <tbody className="text-gray-600 dark:text-gray-300">
+              <tr className="border-t border-gray-100 dark:border-gray-800">
+                <td className="p-3">Assistant</td>
+                <td className="p-3">1.0%</td>
+              </tr>
+              <tr className="border-t border-gray-100 dark:border-gray-800">
+                <td className="p-3">Curator</td>
+                <td className="p-3">2.0%</td>
+              </tr>
+              <tr className="border-t border-gray-100 dark:border-gray-800">
+                <td className="p-3">Chief</td>
+                <td className="p-3">3.5%</td>
+              </tr>
+              <tr className="border-t border-gray-100 dark:border-gray-800">
+                <td className="p-3">Legendary</td>
+                <td className="p-3">5.0%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 className="font-semibold mt-4 mb-2">Genre Bonus</h3>
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+          When you loan two or more artworks that share a tag (genre) in the
+          same week, you earn a <strong>+50% bonus</strong> on the loan fee for
+          each matching work. Building a thematic collection around shared
+          genres&mdash;impressionist, portrait, sculpture&mdash;is financially
+          rewarded.
+        </p>
+      </section>
+
+      {/* ====== Mortgage ====== */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-3">Mortgage</h2>
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-2">
+          When your runway gets low, you can mortgage an artwork to raise cash
+          without selling it.
+        </p>
+        <ul className="list-disc pl-6 text-gray-600 dark:text-gray-300 space-y-1 mb-3">
+          <li><strong>Borrow:</strong> up to 50% of the artwork&rsquo;s IV</li>
+          <li><strong>Interest:</strong> 2% of principal per week</li>
+          <li><strong>Term:</strong> 12 weeks to repay</li>
+          <li><strong>Limit:</strong> 2 mortgages at a time</li>
+        </ul>
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+          If you cannot repay at term end, the artwork is sold at dealer rate
+          and the mortgage is settled from the proceeds. Mortgaged works cannot
+          be loaned to curators.
         </p>
       </section>
 
@@ -310,33 +406,149 @@ export default function RulesPage() {
           </li>
         </ol>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          This is the game&rsquo;s consequences engine. Overreach can dismantle
-          a great collection.
+          Running out of credits is not the end&mdash;your journey concludes with
+          the highest achievement tier you&rsquo;ve reached (see Achievements below).
         </p>
       </section>
 
       {/* ====== Starting Credits ====== */}
       <section className="mb-10">
-        <h2 className="text-xl font-semibold mb-3">Starting Credits and Top-Ups</h2>
-
-        <h3 className="font-semibold mt-4 mb-2">Starting Credits</h3>
-        <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-3">
-          Players begin with <strong>1,000,000 cr</strong>.
-        </p>
-
-        <h3 className="font-semibold mt-4 mb-2">Top-Up Packs</h3>
-        <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-1">
-          Players can acquire additional credits in fixed packs:
-        </p>
-        <ul className="list-disc pl-6 text-gray-600 dark:text-gray-300 space-y-1 mb-2">
-          <li>100,000 cr</li>
-          <li>250,000 cr</li>
-          <li>500,000 cr</li>
-          <li>1,000,000 cr</li>
+        <h2 className="text-xl font-semibold mb-3">Starting Conditions</h2>
+        <ul className="list-disc pl-6 text-gray-600 dark:text-gray-300 space-y-1 mb-3">
+          <li>Players begin with <strong>1,000,000 cr</strong></li>
+          <li>You receive <strong>one D-tier artwork</strong> to start your collection</li>
+          <li>Mystery packages are available from the start</li>
         </ul>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          Top-up amounts may be adjusted during beta to maintain economic
-          balance.
+      </section>
+
+      {/* ====== Achievements ====== */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-3">Achievement Tiers</h2>
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-3">
+          When your run ends&mdash;whether you found a museum, run out of credits,
+          or reach the 104-week limit&mdash;you receive the highest achievement
+          tier you qualify for. There is no &ldquo;failure&rdquo;&mdash;just how
+          far you climbed.
+        </p>
+        <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden mb-3">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 dark:bg-gray-900">
+              <tr>
+                <th className="text-left p-3 font-medium text-gray-500">Tier</th>
+                <th className="text-left p-3 font-medium text-gray-500">Requirements</th>
+              </tr>
+            </thead>
+            <tbody className="text-gray-600 dark:text-gray-300">
+              <tr className="border-t border-gray-100 dark:border-gray-800">
+                <td className="p-3 font-semibold">Hall</td>
+                <td className="p-3">2+ artworks, 2+ tags</td>
+              </tr>
+              <tr className="border-t border-gray-100 dark:border-gray-800">
+                <td className="p-3 font-semibold">Gallery</td>
+                <td className="p-3">4+ artworks, 3+ tags, 1+ B-tier</td>
+              </tr>
+              <tr className="border-t border-gray-100 dark:border-gray-800">
+                <td className="p-3 font-semibold">Wing</td>
+                <td className="p-3">6+ artworks, 4+ tags, 2+ B-tier, 1+ A-tier</td>
+              </tr>
+              <tr className="border-t border-gray-100 dark:border-gray-800">
+                <td className="p-3 font-semibold">Museum</td>
+                <td className="p-3">Full founding requirements (see below)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* ====== Museum ====== */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-3">
+          Endgame: Founding a Museum
+        </h2>
+
+        <h3 className="font-semibold mt-4 mb-2">The Crowning Achievement</h3>
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-3">
+          The highest achievement is founding an eponymous museum (e.g.,
+          &ldquo;The ___ Museum&rdquo;). This creates a permanent legacy.
+        </p>
+
+        <h3 className="font-semibold mt-4 mb-2">Requirements</h3>
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-2">
+          To found a museum, you must meet all of the following:
+        </p>
+        <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden mb-3">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 dark:bg-gray-900">
+              <tr>
+                <th className="text-left p-3 font-medium text-gray-500">Requirement</th>
+                <th className="text-left p-3 font-medium text-gray-500">Threshold</th>
+              </tr>
+            </thead>
+            <tbody className="text-gray-600 dark:text-gray-300">
+              <tr className="border-t border-gray-100 dark:border-gray-800">
+                <td className="p-3">A-tier artworks</td>
+                <td className="p-3">1+</td>
+              </tr>
+              <tr className="border-t border-gray-100 dark:border-gray-800">
+                <td className="p-3">B-tier artworks</td>
+                <td className="p-3">1+</td>
+              </tr>
+              <tr className="border-t border-gray-100 dark:border-gray-800">
+                <td className="p-3">C-tier artworks</td>
+                <td className="p-3">2+</td>
+              </tr>
+              <tr className="border-t border-gray-100 dark:border-gray-800">
+                <td className="p-3">D-tier artworks</td>
+                <td className="p-3">4+</td>
+              </tr>
+              <tr className="border-t border-gray-100 dark:border-gray-800">
+                <td className="p-3">Total artworks</td>
+                <td className="p-3">8+</td>
+              </tr>
+              <tr className="border-t border-gray-100 dark:border-gray-800">
+                <td className="p-3">Tag diversity</td>
+                <td className="p-3">5+ unique tags</td>
+              </tr>
+              <tr className="border-t border-gray-100 dark:border-gray-800">
+                <td className="p-3">Expertise</td>
+                <td className="p-3">10+</td>
+              </tr>
+              <tr className="border-t border-gray-100 dark:border-gray-800">
+                <td className="p-3">Endowment</td>
+                <td className="p-3">6 weeks of carry costs in cash</td>
+              </tr>
+              <tr className="border-t border-gray-100 dark:border-gray-800">
+                <td className="p-3">Mortgages</td>
+                <td className="p-3">All cleared (no outstanding)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 className="font-semibold mt-4 mb-2">Ascension</h3>
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-3">
+          Founding a museum is an <strong>ascension event</strong>. Your
+          collection returns to the market through a celebratory Founding Sale,
+          and you begin a fresh run. The museum is the reward and the permanent
+          record. The climb begins again.
+        </p>
+
+        <h3 className="font-semibold mt-4 mb-2">Museum Founder Bonus</h3>
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-2">
+          Each museum you found increases your next run&rsquo;s starting
+          bankroll:
+        </p>
+        <ul className="list-disc pl-6 text-gray-600 dark:text-gray-300 space-y-1 mb-3">
+          <li>
+            <strong>+250,000 cr</strong> per museum founded
+          </li>
+          <li>
+            <strong>Maximum: 9 museums</strong> (2,250,000 cr bonus cap)
+          </li>
+        </ul>
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed font-mono text-sm bg-gray-50 dark:bg-gray-900 px-4 py-2 rounded-lg">
+          Next-run starting credits = 1,000,000 + min(Museums Founded, 9) &times;
+          250,000
         </p>
       </section>
 
@@ -362,6 +574,9 @@ export default function RulesPage() {
           <li>
             <strong>Health badge</strong>: Safe / Tight / At Risk
           </li>
+          <li>
+            <strong>Museum Progress</strong>: requirement-by-requirement tracker
+          </li>
         </ul>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Players should never be surprised by delinquency.
@@ -384,61 +599,6 @@ export default function RulesPage() {
         </p>
       </section>
 
-      {/* ====== Museum ====== */}
-      <section className="mb-10">
-        <h2 className="text-xl font-semibold mb-3">
-          Endgame: Founding a Museum
-        </h2>
-
-        <h3 className="font-semibold mt-4 mb-2">The Crowning Achievement</h3>
-        <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-3">
-          The highest achievement is founding an eponymous museum (e.g.,
-          &ldquo;The ___ Museum&rdquo;). This creates a permanent legacy.
-        </p>
-
-        <h3 className="font-semibold mt-4 mb-2">Requirements</h3>
-        <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-1">
-          To found a museum, you must demonstrate breadth, quality, and
-          responsible stewardship:
-        </p>
-        <ul className="list-disc pl-6 text-gray-600 dark:text-gray-300 space-y-1 mb-3">
-          <li>A collection spanning multiple tiers with sufficient size</li>
-          <li>Diversity of artistic styles and periods across your holdings</li>
-          <li>A minimum stewardship score</li>
-          <li>A minimum prestige score</li>
-          <li>Sufficient credits on hand as an endowment</li>
-        </ul>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          Exact thresholds may be tuned as the game evolves.
-        </p>
-
-        <h3 className="font-semibold mt-4 mb-2">Ascension</h3>
-        <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-3">
-          Founding a museum is an <strong>ascension event</strong>. Your
-          collection returns to the market through a celebratory Founding Sale,
-          and you begin a fresh run. The museum is the reward and the permanent
-          record. The climb begins again.
-        </p>
-
-        <h3 className="font-semibold mt-4 mb-2">Museum Founder Bonus</h3>
-        <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-2">
-          Each museum you found increases your next run&rsquo;s starting
-          bankroll:
-        </p>
-        <ul className="list-disc pl-6 text-gray-600 dark:text-gray-300 space-y-1 mb-3">
-          <li>
-            <strong>+1,000,000 cr</strong> per museum founded
-          </li>
-          <li>
-            <strong>Maximum: 9 museums</strong> (9,000,000 cr bonus cap)
-          </li>
-        </ul>
-        <p className="text-gray-600 dark:text-gray-300 leading-relaxed font-mono text-sm bg-gray-50 dark:bg-gray-900 px-4 py-2 rounded-lg">
-          Next-run starting credits = 1,000,000 + min(Museums Founded, 9) &times;
-          1,000,000
-        </p>
-      </section>
-
       {/* ====== Spirit ====== */}
       <section className="mb-10">
         <h2 className="text-xl font-semibold mb-3">The Spirit of the Game</h2>
@@ -453,7 +613,7 @@ export default function RulesPage() {
         </ul>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Boldness is rewarded. Overreach is punished. The market is alive
-          because collectors must constantly balance prestige with survival.
+          because collectors must constantly balance expertise with survival.
         </p>
       </section>
     </div>

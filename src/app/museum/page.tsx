@@ -1,10 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { SEED_MUSEUMS } from "@/data/seed";
 import type { Museum } from "@/lib/types";
-
-// TODO: Fetch from API route. Using seed data directly for v0.
 
 const STATUS_BADGES: Record<string, string> = {
   active: "bg-green-100 text-green-800",
@@ -19,23 +17,32 @@ const LEVEL_LABELS: Record<string, string> = {
 };
 
 export default function MuseumListPage() {
-  const museums: Museum[] = SEED_MUSEUMS;
+  const [museums, setMuseums] = useState<Museum[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/museums")
+      .then((r) => r.json())
+      .then((data) => setMuseums(data.museums ?? []))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <p className="text-gray-500 py-12 text-center">Loading museums...</p>;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Museums</h1>
-        <span className="text-sm text-gray-400">
-          {/* TODO: Link to founding flow when implemented */}
-          Whale-tier players can found a museum
-        </span>
+        <Link href="/dashboard" className="text-sm text-[var(--accent-dark)] hover:underline">
+          Check founding requirements →
+        </Link>
       </div>
 
       {museums.length === 0 ? (
         <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-8 text-center">
           <p className="text-gray-400">No museums have been founded yet.</p>
           <p className="text-sm text-gray-500 mt-2">
-            Reach Whale tier with a deep collection to found the first museum.
+            Meet all founding requirements on your Dashboard to found the first museum.
           </p>
         </div>
       ) : (

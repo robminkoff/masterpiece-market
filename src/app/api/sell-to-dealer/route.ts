@@ -6,6 +6,7 @@ import {
   adjustCredits,
   executeSaleDb,
   getAuctions,
+  getActiveMortgageForArtwork,
 } from "@/lib/db";
 import { DEALER_BUY_RATE, canResell, dealerCommissionAmount, sellerNetProceeds } from "@/lib/types";
 
@@ -40,6 +41,12 @@ export async function POST(request: NextRequest) {
   }
   if (!canResell(ownership.acquired_at)) {
     return NextResponse.json({ error: "24-hour hold period has not elapsed" }, { status: 400 });
+  }
+
+  // Check if artwork is mortgaged
+  const mortgage = await getActiveMortgageForArtwork(artwork_id);
+  if (mortgage) {
+    return NextResponse.json({ error: "Cannot sell a mortgaged artwork. Repay the mortgage first." }, { status: 400 });
   }
 
   // Check if artwork is submitted to auction

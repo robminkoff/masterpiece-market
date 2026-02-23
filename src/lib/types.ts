@@ -31,16 +31,16 @@ export function tierFromIV(iv: number): ArtworkTier {
 
 export const TIER_CONFIG = {
   A: { premiumRate: 0.015, storageFee: 1_000 },
-  B: { premiumRate: 0.015, storageFee: 400 },
-  C: { premiumRate: 0.008, storageFee: 100 },
-  D: { premiumRate: 0.003, storageFee: 20 },
+  B: { premiumRate: 0.010, storageFee: 400 },
+  C: { premiumRate: 0.0075, storageFee: 100 },
+  D: { premiumRate: 0.005, storageFee: 20 },
 } as const;
 
 export const CURATOR_LOAN_FEES: Record<CuratorTier, number> = {
-  assistant: 0.0025,
-  curator: 0.0045,
-  chief: 0.0075,
-  legendary: 0.012,
+  assistant: 0.01,
+  curator: 0.02,
+  chief: 0.035,
+  legendary: 0.05,
 };
 
 export const LOAN_PREMIUM_REDUCTION = 0.7; // 70% reduction while on loan
@@ -55,6 +55,11 @@ export const SELLER_FEE_RATE = 0.025;
 export const BID_EXTENSION_SECONDS = 15;
 export const MIN_HOLD_HOURS = 0;
 export const MAX_ACQUISITIONS_PER_WEEK = 1;
+export const MUSEUM_FOUNDING_BONUS = 250_000;
+export const MAX_MUSEUMS = 9;
+export const QUIZ_EXPERTISE_REWARD = 1;
+export const GENRE_BONUS_RATE = 0.50;
+export const GENRE_BONUS_MIN_WORKS = 2;
 
 // ---------- Entity interfaces ----------
 
@@ -64,11 +69,12 @@ export interface Profile {
   display_name: string;
   tier: PlayerTier;
   credits: number;
-  prestige: number;
+  expertise: number;
   stewardship: number;
   created_at: string;
   last_active: string;
   last_burn_at: string;
+  last_quiz_at: string | null;
 }
 
 export type ArtworkSource = "met" | "rijks" | "nga" | "iiif" | "wikimedia";
@@ -223,13 +229,13 @@ export const MUSEUM_FOUNDING_REQUIREMENTS = {
   minTierA: 1,
   minTierB: 1,
   minTierC: 2,
-  minTierD: 2,
-  minTotalArtworks: 6,
+  minTierD: 4,
+  minTotalArtworks: 8,
   minTagDiversity: 5,
   minStewardship: 25,
-  minPrestige: 50,
+  minExpertise: 10,
   minPatronWeeks: 8,
-  endowmentWeeks: 12,           // lock 12 weeks of carry costs
+  endowmentWeeks: 6,            // lock 6 weeks of carry costs
   minEndowmentReserveWeeks: 8,  // must always cover 8 weeks
   exhibitionCadenceWeeks: 8,    // 1 exhibition per this many weeks
   probationMaxWeeks: 8,
@@ -279,6 +285,53 @@ export interface MuseumMembership {
   started_at: string;
   ends_at: string;
   auto_renew: boolean;
+}
+
+// ---------- Mortgage types ----------
+
+export type MortgageStatus = "active" | "repaid" | "defaulted";
+
+export const MORTGAGE_CONFIG = {
+  ltvRate: 0.50,
+  weeklyInterestRate: 0.02,
+  termWeeks: 12,
+  maxActive: 2,
+} as const;
+
+export interface Mortgage {
+  id: string;
+  artwork_id: string;
+  owner_id: string;
+  principal: number;
+  weekly_interest_rate: number;
+  term_weeks: number;
+  weeks_remaining: number;
+  status: MortgageStatus;
+  created_at: string;
+  matured_at: string | null;
+}
+
+// ---------- Achievement Tier types ----------
+
+export type AchievementTier = "none" | "exhibition_hall" | "gallery" | "wing" | "museum";
+
+export const ACHIEVEMENT_REQUIREMENTS = {
+  exhibition_hall: { minArtworks: 2, minTags: 2, minBTier: 0, minATier: 0 },
+  gallery:         { minArtworks: 4, minTags: 3, minBTier: 1, minATier: 0 },
+  wing:            { minArtworks: 6, minTags: 4, minBTier: 2, minATier: 1 },
+} as const;
+
+export function computeAchievementTier(artworks: { tier: ArtworkTier; tags: string[] }[]): AchievementTier {
+  const count = artworks.length;
+  const uniqueTags = new Set(artworks.flatMap((a) => a.tags)).size;
+  const bCount = artworks.filter((a) => a.tier === "B").length;
+  const aCount = artworks.filter((a) => a.tier === "A").length;
+
+  const reqs = ACHIEVEMENT_REQUIREMENTS;
+  if (count >= reqs.wing.minArtworks && uniqueTags >= reqs.wing.minTags && bCount >= reqs.wing.minBTier && aCount >= reqs.wing.minATier) return "wing";
+  if (count >= reqs.gallery.minArtworks && uniqueTags >= reqs.gallery.minTags && bCount >= reqs.gallery.minBTier) return "gallery";
+  if (count >= reqs.exhibition_hall.minArtworks && uniqueTags >= reqs.exhibition_hall.minTags) return "exhibition_hall";
+  return "none";
 }
 
 // ---------- Enriched types for API responses ----------

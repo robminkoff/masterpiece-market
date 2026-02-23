@@ -20,8 +20,7 @@ export function ProfileShell({
 
   const isUser = entity.kind === "user";
   const credits = isUser ? entity.profile.credits : entity.npc.credits;
-  const prestige = isUser ? entity.profile.prestige : entity.npc.prestige;
-  const stewardship = isUser ? entity.profile.stewardship : entity.npc.stewardship_score;
+  const expertise = isUser ? entity.profile.expertise : entity.npc.prestige;
   const npcRole = !isUser ? entity.npc.role : undefined;
 
   // Separate on-loan artworks from collection
@@ -33,7 +32,7 @@ export function ProfileShell({
   return (
     <div>
       <ProfileHeader entity={entity} />
-      <StatBar credits={credits} prestige={prestige} stewardship={stewardship} />
+      <StatBar credits={credits} expertise={expertise} />
       <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} npcRole={npcRole} />
 
       <div className="mt-6">
