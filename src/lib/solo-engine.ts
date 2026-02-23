@@ -190,38 +190,14 @@ const DEFAULT_TIERS: Record<Tier, TierConfig> = {
   D: { minIV: 5_000, maxIV: 49_000, premiumRate: 0.005, storageFee: 100, lotsPerWeek: 10, loanOfferProb: 0.05 },
 };
 
-// ── Preset configs ──────────────────────────────────────────────────
+// ── Solo config (single fixed configuration) ───────────────────────
 
-const SOLO_PRESETS: Record<string, Partial<SoloConfig>> = {
-  default: {
-    name: "Normal",
-  },
-  hard: {
-    name: "Hard",
-    startingCredits: 500_000,
-    museum: {
-      minA: 1, minB: 2, minC: 3, minD: 4, minTotal: 10,
-      minTagDiversity: 6, endowmentWeeks: 8, minPrestige: 15,
-    },
-  },
-  "student-hard": {
-    name: "Student Hard",
-    startingCredits: 1_000_000,
-    museum: {
-      minA: 2, minB: 2, minC: 3, minD: 3, minTotal: 10,
-      minTagDiversity: 7, endowmentWeeks: 8, minPrestige: 30,
-    },
-    maxAcquisitionsPerWeek: 2,
-  },
-};
-
-export function buildSoloConfig(presetKey: string): SoloConfig {
-  const preset = SOLO_PRESETS[presetKey] ?? {};
+export function buildSoloConfig(_presetKey?: string): SoloConfig {
   return {
-    name: preset.name ?? "Normal",
-    startingCredits: preset.startingCredits ?? 1_000_000,
+    name: "Solo",
+    startingCredits: 1_000_000,
     maxWeeks: 104,
-    maxAcquisitionsPerWeek: preset.maxAcquisitionsPerWeek ?? 2,
+    maxAcquisitionsPerWeek: 2,
     tiers: { ...DEFAULT_TIERS },
     market: { name: "Normal", clearingMean: 0.95, clearingStd: 0.10, clearingMin: 0.50, clearingMax: 1.40 },
     loans: {
@@ -236,7 +212,7 @@ export function buildSoloConfig(presetKey: string): SoloConfig {
         { name: "legendary", weight: 2, feeRate: 0.05 },
       ],
     },
-    museum: preset.museum ?? {
+    museum: {
       minA: 1, minB: 1, minC: 2, minD: 4, minTotal: 8,
       minTagDiversity: 5, endowmentWeeks: 6, minPrestige: 10,
     },
@@ -267,10 +243,6 @@ export function buildSoloConfig(presetKey: string): SoloConfig {
     },
     startingArtwork: { enabled: true, tier: "D" },
   };
-}
-
-export function getAvailablePresets(): { key: string; name: string }[] {
-  return Object.entries(SOLO_PRESETS).map(([key, p]) => ({ key, name: p.name ?? key }));
 }
 
 // ── PRNG helper: create a week-deterministic RNG ────────────────────

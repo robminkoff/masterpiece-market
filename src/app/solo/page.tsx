@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getAvailablePresets } from "@/lib/solo-engine";
 
 interface RunSummary {
   id: string;
@@ -23,8 +22,6 @@ export default function SoloHubPage() {
   const [runs, setRuns] = useState<RunSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
-  const [selectedPreset, setSelectedPreset] = useState("default");
-  const presets = getAvailablePresets();
 
   const loadRuns = useCallback(() => {
     fetch("/api/solo/runs")
@@ -56,7 +53,7 @@ export default function SoloHubPage() {
     const res = await fetch("/api/solo/runs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ configKey: selectedPreset }),
+      body: JSON.stringify({}),
     });
     if (res.ok) {
       const data = await res.json();
@@ -108,29 +105,18 @@ export default function SoloHubPage() {
 
       {/* New run */}
       {!activeRun && (
-        <div className="border border-gray-200 dark:border-gray-800 rounded-xl p-5 mb-6">
-          <h2 className="font-semibold mb-3">New Run</h2>
-          <div className="flex items-end gap-3">
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-500 mb-1">Difficulty</label>
-              <select
-                value={selectedPreset}
-                onChange={(e) => setSelectedPreset(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm"
-              >
-                {presets.map((p) => (
-                  <option key={p.key} value={p.key}>{p.name}</option>
-                ))}
-              </select>
-            </div>
-            <button
-              onClick={handleNewRun}
-              disabled={creating}
-              className="px-5 py-2.5 rounded-lg bg-[var(--accent-dark)] text-white font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
-            >
-              {creating ? "Starting..." : "Start Run"}
-            </button>
+        <div className="border border-gray-200 dark:border-gray-800 rounded-xl p-5 mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold">New Run</h2>
+            <p className="text-sm text-gray-500 mt-0.5">1M starting credits, 104-week limit</p>
           </div>
+          <button
+            onClick={handleNewRun}
+            disabled={creating}
+            className="px-5 py-2.5 rounded-lg bg-[var(--accent-dark)] text-white font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            {creating ? "Starting..." : "Start Run"}
+          </button>
         </div>
       )}
 
