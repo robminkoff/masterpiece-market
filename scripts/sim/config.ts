@@ -174,9 +174,9 @@ export const TAG_POOL = [
 
 export const DEFAULT_TIERS: Record<Tier, TierConfig> = {
   A: { minIV: 350_000, maxIV: 1_200_000, premiumRate: 0.015, storageFee: 1_000, lotsPerWeek: 1,  loanOfferProb: 0.12 },
-  B: { minIV:  75_000, maxIV:   349_000, premiumRate: 0.010, storageFee:   400, lotsPerWeek: 3,  loanOfferProb: 0.10 },
-  C: { minIV:  50_000, maxIV:    74_000, premiumRate: 0.0075, storageFee:   100, lotsPerWeek: 6,  loanOfferProb: 0.07 },
-  D: { minIV:   5_000, maxIV:    49_000, premiumRate: 0.005,  storageFee:    20, lotsPerWeek: 10, loanOfferProb: 0.05 },
+  B: { minIV:  75_000, maxIV:   349_000, premiumRate: 0.010, storageFee:   500, lotsPerWeek: 3,  loanOfferProb: 0.10 },
+  C: { minIV:  50_000, maxIV:    74_000, premiumRate: 0.0075, storageFee:   250, lotsPerWeek: 6,  loanOfferProb: 0.07 },
+  D: { minIV:   5_000, maxIV:    49_000, premiumRate: 0.005,  storageFee:   100, lotsPerWeek: 10, loanOfferProb: 0.05 },
 };
 
 export const DEFAULT_LOANS: LoanConfig = {

@@ -31,9 +31,9 @@ export function tierFromIV(iv: number): ArtworkTier {
 
 export const TIER_CONFIG = {
   A: { premiumRate: 0.015, storageFee: 1_000 },
-  B: { premiumRate: 0.010, storageFee: 400 },
-  C: { premiumRate: 0.0075, storageFee: 100 },
-  D: { premiumRate: 0.005, storageFee: 20 },
+  B: { premiumRate: 0.010, storageFee: 500 },
+  C: { premiumRate: 0.0075, storageFee: 250 },
+  D: { premiumRate: 0.005, storageFee: 100 },
 } as const;
 
 export const CURATOR_LOAN_FEES: Record<CuratorTier, number> = {

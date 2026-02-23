@@ -97,9 +97,9 @@ Each owned work costs credits every week:
 | Tier | Premium Rate | Storage Fee | Example (IV = 100k) |
 |------|-------------|-------------|-------------------|
 | A | 1.50% / wk | 1,000 cr | — |
-| B | 1.00% / wk | 400 cr | — |
-| C | 0.75% / wk | 100 cr | 850 cr/wk |
-| D | 0.50% / wk | 20 cr | — |
+| B | 1.00% / wk | 500 cr | — |
+| C | 0.75% / wk | 250 cr | 1,000 cr/wk |
+| D | 0.50% / wk | 100 cr | — |
 
 ### Idle Surcharge
 
@@ -202,9 +202,9 @@ Founding a museum is an **ascension event**. Your collection returns to the mark
 | Tier | Premium/wk | Storage/wk |
 |------|-----------|------------|
 | A | 1.50% | 1,000 cr |
-| B | 1.00% | 400 cr |
-| C | 0.75% | 100 cr |
-| D | 0.50% | 20 cr |
+| B | 1.00% | 500 cr |
+| C | 0.75% | 250 cr |
+| D | 0.50% | 100 cr |
 
 ### Key Numbers
 

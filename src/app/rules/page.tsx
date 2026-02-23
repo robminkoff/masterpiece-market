@@ -247,19 +247,19 @@ export default function RulesPage() {
                 <td className="p-3 font-semibold">B</td>
                 <td className="p-3">&ge; 75,000 cr</td>
                 <td className="p-3">1.00% / wk</td>
-                <td className="p-3">400 cr</td>
+                <td className="p-3">500 cr</td>
               </tr>
               <tr className="border-t border-gray-100 dark:border-gray-800">
                 <td className="p-3 font-semibold">C</td>
                 <td className="p-3">&ge; 50,000 cr</td>
                 <td className="p-3">0.75% / wk</td>
-                <td className="p-3">100 cr</td>
+                <td className="p-3">250 cr</td>
               </tr>
               <tr className="border-t border-gray-100 dark:border-gray-800">
                 <td className="p-3 font-semibold">D</td>
                 <td className="p-3">&lt; 50,000 cr</td>
                 <td className="p-3">0.50% / wk</td>
-                <td className="p-3">20 cr</td>
+                <td className="p-3">100 cr</td>
               </tr>
             </tbody>
           </table>
